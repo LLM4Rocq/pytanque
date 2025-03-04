@@ -26,11 +26,23 @@ type opts = {
     ~hash <python default="True">: bool;
 }
 
+type get_state_params = {
+    ?opts: opts option;
+    uri: string;
+    row: int;
+    col: int;
+}
+
 type start_params = {
     ?pre_commands: string option;
     ?opts: opts option;
     uri: string;
     thm: string;
+}
+
+type check_params = {
+    ?opts: opts option;
+    code: string;
 }
 
 type run_params = {
@@ -75,10 +87,10 @@ type premises_params = {
 
 type premises_response = abstract
 
-type inspect = [ 
-    InspectPhysical <json name="Physical"> | 
-    InspectGoals <json name="Goals"> 
-] 
+type inspect = [
+    InspectPhysical <json name="Physical"> |
+    InspectGoals <json name="Goals">
+]
 
 type state_equal_params = {
     kind: inspect;

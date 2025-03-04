@@ -604,6 +604,54 @@ class Opts:
     def to_json_string(self, **kw: Any) -> str:
         return json.dumps(self.to_json(), **kw)
 
+@dataclass
+class GetStateParams:
+    """Original type: get_state_params = { ... }"""
+
+    uri: str
+    row: int
+    col: int
+    opts: Optional[Opts] = None
+
+    @classmethod
+    def from_json(cls, x: Any) -> "GetStateParams":
+        if isinstance(x, dict):
+            return cls(
+                uri=(
+                    _atd_read_string(x["uri"])
+                    if "uri" in x
+                    else _atd_missing_json_field("GetStateParams", "uri")
+                ),
+                opts=Opts.from_json(x["opts"]) if "opts" in x else None,
+                row= (
+                    _atd_read_int(x["row"])
+                    if "row" in x
+                    else _atd_missing_json_field("GetStateParams", "row")
+                ),
+                col= (
+                    _atd_read_int(x["col"])
+                    if "col" in x
+                    else _atd_missing_json_field("GetStateParams", "col")
+                )
+            )
+        else:
+            _atd_bad_json("GetStateParams", x)
+
+    def to_json(self) -> Any:
+        res: Dict[str, Any] = {}
+        res["uri"] = _atd_write_string(self.uri)
+        if self.opts is not None:
+            res["opts"] = (lambda x: x.to_json())(self.opts)
+        res["row"] = _atd_write_int(self.row)
+        res["col"] = _atd_write_int(self.col)
+        return res
+
+    @classmethod
+    def from_json_string(cls, x: str) -> "StartParams":
+        return cls.from_json(json.loads(x))
+
+    def to_json_string(self, **kw: Any) -> str:
+        return json.dumps(self.to_json(), **kw)
 
 @dataclass
 class StartParams:
@@ -687,6 +735,41 @@ class SetWorkspaceParams:
 
     @classmethod
     def from_json_string(cls, x: str) -> "SetWorkspaceParams":
+        return cls.from_json(json.loads(x))
+
+    def to_json_string(self, **kw: Any) -> str:
+        return json.dumps(self.to_json(), **kw)
+
+@dataclass
+class CheckParams:
+    """Original type: check_params = { ... }"""
+
+    code: str
+    opts: Optional[Opts] = None
+
+    @classmethod
+    def from_json(cls, x: Any) -> "CheckParams":
+        if isinstance(x, dict):
+            return cls(
+                code=(
+                    _atd_read_string(x["code"])
+                    if "code" in x
+                    else _atd_missing_json_field("CheckParams", "code")
+                ),
+                opts=Opts.from_json(x["opts"]) if "opts" in x else None,
+            )
+        else:
+            _atd_bad_json("CheckParams", x)
+
+    def to_json(self) -> Any:
+        res: Dict[str, Any] = {}
+        res["code"] = _atd_write_string(self.code)
+        if self.opts is not None:
+            res["opts"] = (lambda x: x.to_json())(self.opts)
+        return res
+
+    @classmethod
+    def from_json_string(cls, x: str) -> "CheckParams":
         return cls.from_json(json.loads(x))
 
     def to_json_string(self, **kw: Any) -> str:

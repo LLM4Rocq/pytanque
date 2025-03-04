@@ -16,8 +16,10 @@ from .protocol import (
     Request,
     Response,
     Failure,
+    GetStateParams,
     StartParams,
     Opts,
+    CheckParams,
     RunParams,
     GoalsParams,
     PremisesParams,
@@ -39,6 +41,7 @@ from .protocol import (
 
 Params = Union[
     StartParams,
+    CheckParams,
     RunParams,
     GoalsParams,
     PremisesParams,
@@ -63,8 +66,12 @@ inspectGoals = Inspect(InspectGoals())
 
 def mk_request(id: int, params: Params) -> Request:
     match params:
+        case GetStateParams():
+            return Request(id, "petanque/get_state", params.to_json())
         case StartParams():
             return Request(id, "petanque/start", params.to_json())
+        case CheckParams():
+            return Request(id, "petanque/check", params.to_json())
         case RunParams():
             return Request(id, "petanque/run", params.to_json())
         case GoalsParams():
@@ -154,6 +161,23 @@ class Pytanque:
             failure = Failure.from_json_string(raw)
             raise PetanqueError(failure.error.code, failure.error.message)
 
+    def get_state(
+        self,
+        file: str,
+        pos: tuple[int, int],
+        opts: Optional[Opts] = None
+    ) -> State:
+        """
+        Get the state at position [pos] in [file].
+        """
+        path = os.path.abspath(file)
+        uri = pathlib.Path(path).as_uri()
+        row, col = pos
+        resp = self.query(GetStateParams(uri, row, col, opts))
+        res = State.from_json(resp.result)
+        logger.info(f"Get state success")
+        return res
+
     def start(
         self,
         file: str,
@@ -169,6 +193,19 @@ class Pytanque:
         resp = self.query(StartParams(uri, thm, pre_commands, opts))
         res = State.from_json(resp.result)
         logger.info(f"Start success.")
+        return res
+
+    def check(
+        self,
+        code: str,
+        opts: Optional[Opts] = None,
+    ) -> State:
+        """
+        Check if the given code type check.
+        """
+        resp = self.query(CheckParams(code, opts))
+        res = State.from_json(resp.result)
+        logger.info(f"Type check {code}.")
         return res
 
     def set_workspace(
@@ -193,7 +230,7 @@ class Pytanque:
         timeout: Optional[int] = None,
     ) -> State:
         """
-        Execute on tactic.
+        Execute one tactic.
         """
         if timeout and tac.endswith("."):
             tac = f"Timeout {timeout} {tac}"
