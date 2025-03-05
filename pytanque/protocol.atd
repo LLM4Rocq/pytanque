@@ -26,11 +26,16 @@ type opts = {
     ~hash <python default="True">: bool;
 }
 
-type get_state_params = {
+type get_state_at_pos_params = {
     ?opts: opts option;
     uri: string;
     row: int;
     col: int;
+}
+
+type get_root_state_params = {
+    ?opts: opts option;
+    uri: string;
 }
 
 type start_params = {
@@ -38,11 +43,6 @@ type start_params = {
     ?opts: opts option;
     uri: string;
     thm: string;
-}
-
-type check_params = {
-    ?opts: opts option;
-    code: string;
 }
 
 type run_params = {

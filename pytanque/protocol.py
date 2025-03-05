@@ -605,8 +605,8 @@ class Opts:
         return json.dumps(self.to_json(), **kw)
 
 @dataclass
-class GetStateParams:
-    """Original type: get_state_params = { ... }"""
+class GetStateAtPosParams:
+    """Original type: get_state_at_pos_params = { ... }"""
 
     uri: str
     row: int
@@ -614,28 +614,28 @@ class GetStateParams:
     opts: Optional[Opts] = None
 
     @classmethod
-    def from_json(cls, x: Any) -> "GetStateParams":
+    def from_json(cls, x: Any) -> "GetStateAtPosParams":
         if isinstance(x, dict):
             return cls(
                 uri=(
                     _atd_read_string(x["uri"])
                     if "uri" in x
-                    else _atd_missing_json_field("GetStateParams", "uri")
+                    else _atd_missing_json_field("GetStateAtPosParams", "uri")
                 ),
                 opts=Opts.from_json(x["opts"]) if "opts" in x else None,
                 row= (
                     _atd_read_int(x["row"])
                     if "row" in x
-                    else _atd_missing_json_field("GetStateParams", "row")
+                    else _atd_missing_json_field("GetStateAtPosParams", "row")
                 ),
                 col= (
                     _atd_read_int(x["col"])
                     if "col" in x
-                    else _atd_missing_json_field("GetStateParams", "col")
+                    else _atd_missing_json_field("GetStateAtPosParams", "col")
                 )
             )
         else:
-            _atd_bad_json("GetStateParams", x)
+            _atd_bad_json("GetStateAtPosParams", x)
 
     def to_json(self) -> Any:
         res: Dict[str, Any] = {}
@@ -647,7 +647,42 @@ class GetStateParams:
         return res
 
     @classmethod
-    def from_json_string(cls, x: str) -> "StartParams":
+    def from_json_string(cls, x: str) -> "GetStateAtPosParams":
+        return cls.from_json(json.loads(x))
+
+    def to_json_string(self, **kw: Any) -> str:
+        return json.dumps(self.to_json(), **kw)
+
+@dataclass
+class GetRootStateParams:
+    """Original type: get_root_state_params = { ... }"""
+
+    uri: str
+    opts: Optional[Opts] = None
+
+    @classmethod
+    def from_json(cls, x: Any) -> "GetRootStateParams":
+        if isinstance(x, dict):
+            return cls(
+                uri=(
+                    _atd_read_string(x["uri"])
+                    if "uri" in x
+                    else _atd_missing_json_field("GetRootStateParams", "uri")
+                ),
+                opts=Opts.from_json(x["opts"]) if "opts" in x else None
+            )
+        else:
+            _atd_bad_json("GetRootStateParams", x)
+
+    def to_json(self) -> Any:
+        res: Dict[str, Any] = {}
+        res["uri"] = _atd_write_string(self.uri)
+        if self.opts is not None:
+            res["opts"] = (lambda x: x.to_json())(self.opts)
+        return res
+
+    @classmethod
+    def from_json_string(cls, x: str) -> "GetRootStateParams":
         return cls.from_json(json.loads(x))
 
     def to_json_string(self, **kw: Any) -> str:
@@ -739,42 +774,6 @@ class SetWorkspaceParams:
 
     def to_json_string(self, **kw: Any) -> str:
         return json.dumps(self.to_json(), **kw)
-
-@dataclass
-class CheckParams:
-    """Original type: check_params = { ... }"""
-
-    code: str
-    opts: Optional[Opts] = None
-
-    @classmethod
-    def from_json(cls, x: Any) -> "CheckParams":
-        if isinstance(x, dict):
-            return cls(
-                code=(
-                    _atd_read_string(x["code"])
-                    if "code" in x
-                    else _atd_missing_json_field("CheckParams", "code")
-                ),
-                opts=Opts.from_json(x["opts"]) if "opts" in x else None,
-            )
-        else:
-            _atd_bad_json("CheckParams", x)
-
-    def to_json(self) -> Any:
-        res: Dict[str, Any] = {}
-        res["code"] = _atd_write_string(self.code)
-        if self.opts is not None:
-            res["opts"] = (lambda x: x.to_json())(self.opts)
-        return res
-
-    @classmethod
-    def from_json_string(cls, x: str) -> "CheckParams":
-        return cls.from_json(json.loads(x))
-
-    def to_json_string(self, **kw: Any) -> str:
-        return json.dumps(self.to_json(), **kw)
-
 
 @dataclass
 class RunParams:
