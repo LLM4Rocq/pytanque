@@ -51,6 +51,17 @@ type run_params = {
     tac: string;
 }
 
+type feedback = {
+    severity: string;
+    message: string
+}
+
+type run_with_feedback_params = {
+    ?opts: opts option;
+    st: int;
+    cmd: string
+}
+
 type state = {
     st: int;
     ?hash: int option;

@@ -819,6 +819,88 @@ class RunParams:
 
 
 @dataclass
+class Feedback:
+    """Original type: feedback = { ... }"""
+
+    severity: str
+    message: str
+
+    @classmethod
+    def from_json(cls, x: Any) -> "Feedback":
+        if isinstance(x, dict):
+            return cls(
+                severity=(
+                    _atd_read_string(x["severity"])
+                    if "severity" in x
+                    else _atd_missing_json_field("Feedback", "severity")
+                ),
+                message=(
+                    _atd_read_string(x["message"])
+                    if "message" in x
+                    else _atd_missing_json_field("Feedback", "message")
+                )
+            )
+        else:
+            _atd_bad_json("Feedback", x)
+
+    def to_json(self) -> Any:
+        res: Dict[str, Any] = {}
+        res["severity"] = _atd_write_string(self.severity)
+        res["message"] = _atd_write_string(self.message)
+        return res
+
+    @classmethod
+    def from_json_string(cls, x: str) -> "Feedback":
+        return cls.from_json(json.loads(x))
+
+    def to_json_string(self, **kw: Any) -> str:
+        return json.dumps(self.to_json(), **kw)
+
+
+@dataclass
+class RunWithFeedbackParams:
+    """Original type: run_with_feedback_params = { ... }"""
+
+    st: int
+    cmd: str
+    opts: Optional[Opts] = None
+
+    @classmethod
+    def from_json(cls, x: Any) -> "RunWithFeedbackParams":
+        if isinstance(x, dict):
+            return cls(
+                st=(
+                    _atd_read_int(x["st"])
+                    if "st" in x
+                    else _atd_missing_json_field("RunWithFeedbackParams", "st")
+                ),
+                cmd=(
+                    _atd_read_string(x["cmd"])
+                    if "cmd" in x
+                    else _atd_missing_json_field("RunWithFeedbackParams", "cmd")
+                ),
+                opts=Opts.from_json(x["opts"]) if "opts" in x else None,
+            )
+        else:
+            _atd_bad_json("RunWithFeedbackParams", x)
+
+    def to_json(self) -> Any:
+        res: Dict[str, Any] = {}
+        res["st"] = _atd_write_int(self.st)
+        res["cmd"] = _atd_write_string(self.cmd)
+        if self.opts is not None:
+            res["opts"] = (lambda x: x.to_json())(self.opts)
+        return res
+
+    @classmethod
+    def from_json_string(cls, x: str) -> "RunWithFeedbackParams":
+        return cls.from_json(json.loads(x))
+
+    def to_json_string(self, **kw: Any) -> str:
+        return json.dumps(self.to_json(), **kw)
+
+
+@dataclass
 class Response:
     """Original type: response = { ... }"""
 

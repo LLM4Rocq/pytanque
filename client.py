@@ -4,6 +4,7 @@ import os
 import pathlib
 import logging
 from typing import (
+    Tuple,
     Union,
     Any,
     Optional,
@@ -21,6 +22,8 @@ from .protocol import (
     StartParams,
     Opts,
     RunParams,
+    Feedback,
+    RunWithFeedbackParams,
     GoalsParams,
     PremisesParams,
     State,
@@ -37,11 +40,14 @@ from .protocol import (
     SetWorkspaceParams,
     TocParams,
     TocResponse,
+    _atd_missing_json_field,
+    _atd_bad_json
 )
 
 Params = Union[
     StartParams,
     RunParams,
+    RunWithFeedbackParams,
     GoalsParams,
     PremisesParams,
     StateEqualParams,
@@ -73,6 +79,8 @@ def mk_request(id: int, params: Params) -> Request:
             return Request(id, "petanque/start", params.to_json())
         case RunParams():
             return Request(id, "petanque/run", params.to_json())
+        case RunWithFeedbackParams():
+            return Request(id, "petanque/run_with_feedback", params.to_json())
         case GoalsParams():
             return Request(id, "petanque/goals", params.to_json())
         case PremisesParams():
@@ -242,6 +250,35 @@ class Pytanque:
             for i, g in enumerate(self.goals(res)):
                 print(f"\nGoal {i}:\n{g.pp}\n")
         return res
+
+    def run_with_feedback(
+        self,
+        state: State,
+        cmd: str,
+        opts: Optional[Opts] = None,
+        verbose: bool = False,
+        timeout: Optional[int] = None,
+    ) -> Tuple[State, list[Feedback]]:
+        """
+        Execute some command and gets all feedback from Rocq.
+        """
+        if timeout and cmd.endswith("."):
+            cmd = f"Timeout {timeout} {cmd}"
+        resp = self.query(RunWithFeedbackParams(state.st, cmd, opts))
+        if not "state" in resp.result:
+            _atd_missing_json_field("RunWithFeedbackResult", "state")
+        if not "feedbacks" in resp.result:
+            _atd_missing_json_field("RunWithFeedbackResult", "feedbacks")
+        if not isinstance(resp.result["feedbacks"], list):
+            _atd_bad_json("list", resp.result["feedbacks"])
+
+        st = State.from_json(resp.result["state"])
+        fbl = list(map(Feedback.from_json, resp.result["feedbacks"]))
+        logger.info(f"Run command {cmd}.")
+        if verbose:
+            for i, g in enumerate(self.goals(st)):
+                print(f"\nGoal {i}:\n{g.pp}\n")
+        return (st, fbl)
 
     def goals(self, state: State, pretty: bool = True) -> List[Goal]:
         """
