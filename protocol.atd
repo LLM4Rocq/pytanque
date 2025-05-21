@@ -48,24 +48,14 @@ type start_params = {
 type run_params = {
     ?opts: opts option;
     st: int;
-    tac: string;
-}
-
-type feedback = {
-    severity: string;
-    message: string
-}
-
-type run_with_feedback_params = {
-    ?opts: opts option;
-    st: int;
-    cmd: string
+    cmd: string;
 }
 
 type state = {
     st: int;
     ?hash: int option;
     proof_finished: bool;
+    feedback: (int * string) list
 }
 
 type goals_params = {
