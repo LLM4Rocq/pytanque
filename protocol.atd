@@ -48,7 +48,7 @@ type start_params = {
 type run_params = {
     ?opts: opts option;
     st: int;
-    cmd: string;
+    tac: string;
 }
 
 type state = {

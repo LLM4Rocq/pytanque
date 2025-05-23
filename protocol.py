@@ -623,7 +623,7 @@ class RunParams:
     """Original type: run_params = { ... }"""
 
     st: int
-    cmd: str
+    tac: str
     opts: Optional[Opts] = None
 
     @classmethod
@@ -631,7 +631,7 @@ class RunParams:
         if isinstance(x, dict):
             return cls(
                 st=_atd_read_int(x['st']) if 'st' in x else _atd_missing_json_field('RunParams', 'st'),
-                cmd=_atd_read_string(x['cmd']) if 'cmd' in x else _atd_missing_json_field('RunParams', 'cmd'),
+                tac=_atd_read_string(x['tac']) if 'tac' in x else _atd_missing_json_field('RunParams', 'tac'),
                 opts=Opts.from_json(x['opts']) if 'opts' in x else None,
             )
         else:
@@ -640,7 +640,7 @@ class RunParams:
     def to_json(self) -> Any:
         res: Dict[str, Any] = {}
         res['st'] = _atd_write_int(self.st)
-        res['cmd'] = _atd_write_string(self.cmd)
+        res['tac'] = _atd_write_string(self.tac)
         if self.opts is not None:
             res['opts'] = (lambda x: x.to_json())(self.opts)
         return res
