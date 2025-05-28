@@ -17,6 +17,7 @@ from .protocol import (
     Request,
     Response,
     Failure,
+    Position,
     GetStateAtPosParams,
     GetRootStateParams,
     StartParams,
@@ -168,18 +169,20 @@ class Pytanque:
     def get_state_at_pos(
         self,
         file: str,
-        point: tuple[int, int],
+        line: int,
+        character: int,
+        offset: int,
         opts: Optional[Opts] = None
     ) -> State:
         """
-        Get the state at position `pos` in `file`.
+        Get the state at position `line`, `character` and `offset` in `file`.
         """
         path = os.path.abspath(file)
         uri = pathlib.Path(path).as_uri()
-        row, col = point
-        resp = self.query(GetStateAtPosParams(uri, row, col, opts))
+        pos = Position(line, character, offset)
+        resp = self.query(GetStateAtPosParams(uri, pos, opts))
         res = State.from_json(resp.result)
-        logger.info(f"Get state at {(row, col)} in {uri} success")
+        logger.info(f"Get state at {pos.to_json_string()} in {uri} success")
         return res
 
     def get_root_state(

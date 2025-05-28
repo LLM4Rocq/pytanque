@@ -26,11 +26,16 @@ type opts = {
     ~hash <python default="True">: bool;
 }
 
+type position = {
+    line: int;
+    character: int;
+    offset: int
+}
+
 type get_state_at_pos_params = {
     ?opts: opts option;
     uri: string;
-    row: int;
-    col: int;
+    position: position
 }
 
 type get_root_state_params = {

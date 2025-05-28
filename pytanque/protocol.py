@@ -774,6 +774,40 @@ class PremisesParams:
 
 
 @dataclass
+class Position:
+    """Original type: position = { ... }"""
+
+    line: int
+    character: int
+    offset: int
+
+    @classmethod
+    def from_json(cls, x: Any) -> 'Position':
+        if isinstance(x, dict):
+            return cls(
+                line=_atd_read_int(x['line']) if 'line' in x else _atd_missing_json_field('Position', 'line'),
+                character=_atd_read_int(x['character']) if 'character' in x else _atd_missing_json_field('Position', 'character'),
+                offset=_atd_read_int(x['offset']) if 'offset' in x else _atd_missing_json_field('Position', 'offset'),
+            )
+        else:
+            _atd_bad_json('Position', x)
+
+    def to_json(self) -> Any:
+        res: Dict[str, Any] = {}
+        res['line'] = _atd_write_int(self.line)
+        res['character'] = _atd_write_int(self.character)
+        res['offset'] = _atd_write_int(self.offset)
+        return res
+
+    @classmethod
+    def from_json_string(cls, x: str) -> 'Position':
+        return cls.from_json(json.loads(x))
+
+    def to_json_string(self, **kw: Any) -> str:
+        return json.dumps(self.to_json(), **kw)
+
+
+@dataclass
 class GoalHyp:
     """Original type: goal_hyp = { ... }"""
 
@@ -916,8 +950,7 @@ class GetStateAtPosParams:
     """Original type: get_state_at_pos_params = { ... }"""
 
     uri: str
-    row: int
-    col: int
+    position: Position
     opts: Optional[Opts] = None
 
     @classmethod
@@ -925,8 +958,7 @@ class GetStateAtPosParams:
         if isinstance(x, dict):
             return cls(
                 uri=_atd_read_string(x['uri']) if 'uri' in x else _atd_missing_json_field('GetStateAtPosParams', 'uri'),
-                row=_atd_read_int(x['row']) if 'row' in x else _atd_missing_json_field('GetStateAtPosParams', 'row'),
-                col=_atd_read_int(x['col']) if 'col' in x else _atd_missing_json_field('GetStateAtPosParams', 'col'),
+                position=Position.from_json(x['position']) if 'position' in x else _atd_missing_json_field('GetStateAtPosParams', 'position'),
                 opts=Opts.from_json(x['opts']) if 'opts' in x else None,
             )
         else:
@@ -935,8 +967,7 @@ class GetStateAtPosParams:
     def to_json(self) -> Any:
         res: Dict[str, Any] = {}
         res['uri'] = _atd_write_string(self.uri)
-        res['row'] = _atd_write_int(self.row)
-        res['col'] = _atd_write_int(self.col)
+        res['position'] = (lambda x: x.to_json())(self.position)
         if self.opts is not None:
             res['opts'] = (lambda x: x.to_json())(self.opts)
         return res
