@@ -18,6 +18,8 @@ from .protocol import (
     Response,
     Failure,
     Position,
+    AstParams,
+    AstAtPosParams,
     GetStateAtPosParams,
     GetRootStateParams,
     StartParams,
@@ -71,6 +73,10 @@ inspectGoals = Inspect(InspectGoals())
 
 def mk_request(id: int, params: Params) -> Request:
     match params:
+        case AstParams():
+            return Request(id, "petanque/ast", params.to_json())
+        case AstAtPosParams():
+            return Request(id, "petanque/ast_at_pos", params.to_json())
         case GetStateAtPosParams():
             return Request(id, "petanque/get_state_at_pos", params.to_json())
         case GetRootStateParams():
@@ -165,6 +171,37 @@ class Pytanque:
         except ValueError:
             failure = Failure.from_json_string(raw)
             raise PetanqueError(failure.error.code, failure.error.message)
+
+    def ast(
+        self,
+        state: State,
+        text: str
+    ) -> dict:
+        """
+        Get the AST corresponding to `text` for the `state`.
+        """
+        resp = self.query(AstParams(state.st, text))
+        res = resp.result
+        logger.info(f"AST of {text}")
+        return res
+
+    def ast_at_pos(
+        self,
+        file: str,
+        line: int,
+        character: int,
+        offset: int
+    ) -> dict:
+        """
+        Get the AST at a certain position `line`, `character` and `offset` in `file`.
+        """
+        path = os.path.abspath(file)
+        uri = pathlib.Path(path).as_uri()
+        pos = Position(line, character, offset)
+        resp = self.query(AstAtPosParams(uri, pos))
+        res = resp.result
+        logger.info(f"AST at {pos.to_json_string()} in {uri}")
+        return res
 
     def get_state_at_pos(
         self,

@@ -32,6 +32,16 @@ type position = {
     offset: int
 }
 
+type ast_params = {
+    st: int;
+    text: string;
+}
+
+type ast_at_pos_params = {
+    uri: string;
+    position: position;
+}
+
 type get_state_at_pos_params = {
     ?opts: opts option;
     uri: string;

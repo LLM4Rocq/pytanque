@@ -1072,3 +1072,65 @@ class Failure:
 
     def to_json_string(self, **kw: Any) -> str:
         return json.dumps(self.to_json(), **kw)
+
+
+@dataclass
+class AstParams:
+    """Original type: ast_params = { ... }"""
+
+    st: int
+    text: str
+
+    @classmethod
+    def from_json(cls, x: Any) -> 'AstParams':
+        if isinstance(x, dict):
+            return cls(
+                st=_atd_read_int(x['st']) if 'st' in x else _atd_missing_json_field('AstParams', 'st'),
+                text=_atd_read_string(x['text']) if 'text' in x else _atd_missing_json_field('AstParams', 'text'),
+            )
+        else:
+            _atd_bad_json('AstParams', x)
+
+    def to_json(self) -> Any:
+        res: Dict[str, Any] = {}
+        res['st'] = _atd_write_int(self.st)
+        res['text'] = _atd_write_string(self.text)
+        return res
+
+    @classmethod
+    def from_json_string(cls, x: str) -> 'AstParams':
+        return cls.from_json(json.loads(x))
+
+    def to_json_string(self, **kw: Any) -> str:
+        return json.dumps(self.to_json(), **kw)
+
+
+@dataclass
+class AstAtPosParams:
+    """Original type: ast_at_pos_params = { ... }"""
+
+    uri: str
+    position: Position
+
+    @classmethod
+    def from_json(cls, x: Any) -> 'AstAtPosParams':
+        if isinstance(x, dict):
+            return cls(
+                uri=_atd_read_string(x['uri']) if 'uri' in x else _atd_missing_json_field('AstAtPosParams', 'uri'),
+                position=Position.from_json(x['position']) if 'position' in x else _atd_missing_json_field('AstAtPosParams', 'position'),
+            )
+        else:
+            _atd_bad_json('AstAtPosParams', x)
+
+    def to_json(self) -> Any:
+        res: Dict[str, Any] = {}
+        res['uri'] = _atd_write_string(self.uri)
+        res['position'] = (lambda x: x.to_json())(self.position)
+        return res
+
+    @classmethod
+    def from_json_string(cls, x: str) -> 'AstAtPosParams':
+        return cls.from_json(json.loads(x))
+
+    def to_json_string(self, **kw: Any) -> str:
+        return json.dumps(self.to_json(), **kw)
