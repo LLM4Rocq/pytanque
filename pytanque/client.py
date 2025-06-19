@@ -181,7 +181,7 @@ class Pytanque:
         Get the AST corresponding to `text` for the `state`.
         """
         resp = self.query(AstParams(state.st, text))
-        res = resp.result
+        res = resp.result["st"]
         logger.info(f"AST of {text}")
         return res
 
@@ -199,7 +199,7 @@ class Pytanque:
         uri = pathlib.Path(path).as_uri()
         pos = Position(line, character, offset)
         resp = self.query(AstAtPosParams(uri, pos))
-        res = resp.result
+        res = resp.result["st"]
         logger.info(f"AST at {pos.to_json_string()} in {uri}")
         return res
 
