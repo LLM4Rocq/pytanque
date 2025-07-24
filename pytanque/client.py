@@ -18,6 +18,7 @@ from .protocol import (
     Response,
     Failure,
     Position,
+    ListNotationsInStatementParams,
     AstParams,
     AstAtPosParams,
     GetStateAtPosParams,
@@ -46,6 +47,7 @@ from .protocol import (
 )
 
 Params = Union[
+    ListNotationsInStatementParams,
     StartParams,
     GetStateAtPosParams,
     GetRootStateParams,
@@ -73,6 +75,8 @@ inspectGoals = Inspect(InspectGoals())
 
 def mk_request(id: int, params: Params) -> Request:
     match params:
+        case ListNotationsInStatementParams():
+            return Request(id, "petanque/list_notations_in_statement", params.to_json())
         case AstParams():
             return Request(id, "petanque/ast", params.to_json())
         case AstAtPosParams():
@@ -171,6 +175,19 @@ class Pytanque:
         except ValueError:
             failure = Failure.from_json_string(raw)
             raise PetanqueError(failure.error.code, failure.error.message)
+
+    def list_notations_in_statement(
+        self,
+        state: State,
+        statement: str
+    ) -> list[dict]:
+        """
+        Get the list of notations appearing in a theorem statetemnt.
+        """
+        resp = self.query(ListNotationsInStatementParams(state.st, statement))
+        res = resp.result["st"]
+        logger.info(f"List notations in the statement:\n{statement}.")
+        return res
 
     def ast(
         self,

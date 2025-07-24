@@ -32,6 +32,11 @@ type position = {
     offset: int
 }
 
+type list_notations_in_statement_params = {
+    st: int;
+    statement: string;
+}
+
 type ast_params = {
     st: int;
     text: string;
