@@ -18,6 +18,7 @@ from .protocol import (
     Response,
     Failure,
     Position,
+    ListNotationsInStatementParams,
     AstParams,
     AstAtPosParams,
     GetStateAtPosParams,
@@ -46,6 +47,7 @@ from .protocol import (
 )
 
 Params = Union[
+    ListNotationsInStatementParams,
     StartParams,
     GetStateAtPosParams,
     GetRootStateParams,
@@ -102,6 +104,8 @@ InspectGoals = Inspect(InspectGoals())
 
 def mk_request(id: int, params: Params) -> Request:
     match params:
+        case ListNotationsInStatementParams():
+            return Request(id, "petanque/list_notations_in_statement", params.to_json())
         case AstParams():
             return Request(id, "petanque/ast", params.to_json())
         case AstAtPosParams():
@@ -323,14 +327,14 @@ class Pytanque:
         lsp_message = f"Content-Length: {content_length}\r\n\r\n{json_payload}"
 
         logger.info(f"Sending LSP message: {json_payload.strip()}")
-        self.process.stdin.write(lsp_message.encode('utf-8'))
+        self.process.stdin.write(lsp_message.encode("utf-8"))
         self.process.stdin.flush()
 
     def _read_lsp_response(self) -> str:
         """Read a JSON-RPC response using LSP format, skipping notifications."""
         while True:
             # Read Content-Length header
-            header_line = self.process.stdout.readline().decode('utf-8')
+            header_line = self.process.stdout.readline().decode("utf-8")
             if not header_line:
                 raise PetanqueError(-32603, "No response from pet process")
 
@@ -340,10 +344,10 @@ class Pytanque:
             # Parse content length and read JSON content
             content_length = int(header_line.split(":")[1].strip())
             self.process.stdout.readline()  # Skip empty line separator
-            
+
             # Read exact number of bytes and decode to UTF-8
             json_bytes = self.process.stdout.read(content_length)
-            json_content = json_bytes.decode('utf-8')
+            json_content = json_bytes.decode("utf-8")
             logger.info(f"Received LSP message: {json_content.strip()}")
 
             try:
@@ -418,6 +422,15 @@ class Pytanque:
         except ValueError:
             failure = Failure.from_json_string(raw)
             raise PetanqueError(failure.error.code, failure.error.message)
+
+    def list_notations_in_statement(self, state: State, statement: str) -> list[dict]:
+        """
+        Get the list of notations appearing in a theorem statetemnt.
+        """
+        resp = self.query(ListNotationsInStatementParams(state.st, statement))
+        res = resp.result["st"]
+        logger.info(f"List notations in the statement:\n{statement}.")
+        return res
 
     def ast(self, state: State, text: str) -> dict:
         """
