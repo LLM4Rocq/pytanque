@@ -943,6 +943,37 @@ class Position:
 
 
 @dataclass
+class ListNotationsInStatementParams:
+    """Original type: list_notations_in_statement_params = { ... }"""
+
+    st: int
+    statement: str
+
+    @classmethod
+    def from_json(cls, x: Any) -> 'ListNotationsInStatementParams':
+        if isinstance(x, dict):
+            return cls(
+                st=_atd_read_int(x['st']) if 'st' in x else _atd_missing_json_field('ListNotationsInStatementParams', 'st'),
+                statement=_atd_read_string(x['statement']) if 'statement' in x else _atd_missing_json_field('ListNotationsInStatementParams', 'statement'),
+            )
+        else:
+            _atd_bad_json('ListNotationsInStatementParams', x)
+
+    def to_json(self) -> Any:
+        res: Dict[str, Any] = {}
+        res['st'] = _atd_write_int(self.st)
+        res['statement'] = _atd_write_string(self.statement)
+        return res
+
+    @classmethod
+    def from_json_string(cls, x: str) -> 'ListNotationsInStatementParams':
+        return cls.from_json(json.loads(x))
+
+    def to_json_string(self, **kw: Any) -> str:
+        return json.dumps(self.to_json(), **kw)
+
+
+@dataclass
 class GoalHyp:
     """Original type: goal_hyp = { ... }"""
 
