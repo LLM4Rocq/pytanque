@@ -8,7 +8,7 @@ from typing import (
     Any,
     Optional,
     Type,
-    List,
+
 )
 from typing_extensions import Self
 from types import TracebackType
@@ -52,6 +52,33 @@ logger = logging.getLogger(__name__)
 
 
 class PetanqueError(Exception):
+    """
+    Exception raised for Petanque-specific errors.
+
+    Parameters
+    ----------
+    code : int
+        Error code from the Petanque server.
+    message : str
+        Error description from the server.
+
+    Attributes
+    ----------
+    code : int
+        Error code.
+    message : str
+        Error description.
+
+    Examples
+    --------
+    >>> from pytanque import Pytanque, PetanqueError
+    >>> try:
+    ...     with Pytanque("127.0.0.1", 8765) as client:
+    ...         state = client.start("./nonexistent.v", "theorem")
+    ... except PetanqueError as e:
+    ...     print(f"Petanque error {e.code}: {e.message}")
+    """
+
     def __init__(self, code, message):
         self.code = code
         self.message = message
@@ -96,11 +123,52 @@ def pp_goal(g: Goal) -> str:
 class Pytanque:
     """
     Petanque client to communicate with the Rocq theorem prover using JSON-RPC over a simple socket.
+
+    The Pytanque class provides a high-level interface for interactive theorem proving
+    with Rocq/Coq through the Petanque server. It supports context manager protocol
+    for automatic connection management.
+
+    Parameters
+    ----------
+    host : str
+        The hostname or IP address of the Petanque server.
+    port : int
+        The port number of the Petanque server.
+
+    Attributes
+    ----------
+    host : str
+        Server hostname.
+    port : int
+        Server port number.
+    id : int
+        Current request ID for JSON-RPC.
+    socket : socket.socket
+        TCP socket for server communication.
+
+    Examples
+    --------
+    >>> from pytanque import Pytanque
+    >>> with Pytanque("127.0.0.1", 8765) as client:
+    ...     state = client.start("./examples/foo.v", "addnC")
+    ...     state = client.run_tac(state, "induction n.", verbose=True)
     """
 
     def __init__(self, host: str, port: int):
         """
-        Open socket given the [host] and [port].
+        Initialize a new Pytanque client instance.
+
+        Parameters
+        ----------
+        host : str
+            The hostname or IP address of the Petanque server.
+        port : int
+            The port number of the Petanque server.
+
+        Examples
+        --------
+        >>> client = Pytanque("127.0.0.1", 8765)
+        >>> client.connect()
         """
         self.host = host
         self.port = port
@@ -109,14 +177,33 @@ class Pytanque:
 
     def connect(self) -> None:
         """
-        Connect the socket to the server
+        Establish connection to the Petanque server.
+
+        Raises
+        ------
+        ConnectionError
+            If connection to the server fails.
+        OSError
+            If socket creation fails.
+
+        Examples
+        --------
+        >>> client = Pytanque("127.0.0.1", 8765)
+        >>> client.connect()
+        >>> client.close()
         """
         self.socket.connect((self.host, self.port))
         logger.info(f"Connected to the socket")
 
     def close(self) -> None:
         """
-        Close the socket
+        Close the connection to the Petanque server.
+
+        Examples
+        --------
+        >>> client = Pytanque("127.0.0.1", 8765)
+        >>> client.connect()
+        >>> client.close()
         """
         self.socket.close()
         logger.info(f"Socket closed")
@@ -127,7 +214,38 @@ class Pytanque:
 
     def query(self, params: Params, size: int = 4096) -> Response:
         """
-        Send a query to the server using JSON-RPC protocol.
+        Send a low-level JSON-RPC query to the server.
+
+        This is an internal method used by other high-level methods.
+        Users should typically use the specific methods like start(), run_tac(), etc.
+
+        Parameters
+        ----------
+        params : Params
+            JSON-RPC parameters (one of StartParams, RunParams, GoalsParams, etc.).
+        size : int, optional
+            Buffer size for receiving response, by default 4096.
+
+        Returns
+        -------
+        Response
+            JSON-RPC response object containing the result.
+
+        Raises
+        ------
+        PetanqueError
+            If the query fails or the server returns an error.
+        ValueError
+            If the response format is invalid.
+
+        Examples
+        --------
+        >>> from pytanque.protocol import StartParams
+        >>> client = Pytanque("127.0.0.1", 8765)
+        >>> client.connect()
+        >>> params = StartParams("file:///path/to/file.v", "theorem_name")
+        >>> response = client.query(params)
+        >>> client.close()
         """
         self.id += 1
         request = mk_request(self.id, params)
@@ -162,7 +280,39 @@ class Pytanque:
         opts: Optional[Opts] = None,
     ) -> State:
         """
-        Start the proof of [thm] defined in [file].
+        Start a proof session for a specific theorem in a Coq/Rocq file.
+
+        Parameters
+        ----------
+        file : str
+            Path to the Coq/Rocq file containing the theorem.
+        thm : str
+            Name of the theorem to prove.
+        pre_commands : str, optional
+            Commands to execute before starting the proof, by default None.
+        opts : Opts, optional
+            Options for proof state management (memo and hash settings), by default None.
+
+        Returns
+        -------
+        State
+            The initial proof state containing:
+            - st : int - State identifier
+            - proof_finished : bool - Whether the proof is complete
+            - hash : int, optional - Hash of the state
+
+        Raises
+        ------
+        PetanqueError
+            If theorem is not found or file cannot be loaded.
+        ValueError
+            If file path is invalid.
+
+        Examples
+        --------
+        >>> with Pytanque("127.0.0.1", 8765) as client:
+        ...     state = client.start("./examples/foo.v", "addnC")
+        ...     print(f"Initial state: {state.st}, finished: {state.proof_finished}")
         """
         path = os.path.abspath(file)
         uri = pathlib.Path(path).as_uri()
@@ -177,7 +327,24 @@ class Pytanque:
         dir: str,
     ):
         """
-        Set the root directory.
+        Set the root directory for the Coq/Rocq workspace.
+
+        Parameters
+        ----------
+        debug : bool
+            Enable debug mode for the workspace.
+        dir : str
+            Path to the workspace root directory.
+
+        Raises
+        ------
+        PetanqueError
+            If directory is invalid or inaccessible.
+
+        Examples
+        --------
+        >>> with Pytanque("127.0.0.1", 8765) as client:
+        ...     client.set_workspace(debug=False, dir="./examples/")
         """
         path = os.path.abspath(dir)
         uri = pathlib.Path(path).as_uri()
@@ -193,7 +360,41 @@ class Pytanque:
         timeout: Optional[int] = None,
     ) -> State:
         """
-        Execute on tactic.
+        Execute a tactic on the current proof state.
+
+        Parameters
+        ----------
+        state : State
+            The current proof state.
+        tac : str
+            The tactic to execute (e.g., "induction n.", "auto.", "lia.").
+        opts : Opts, optional
+            Options for proof state management, by default None.
+        verbose : bool, optional
+            Whether to print goals after tactic execution, by default False.
+        timeout : int, optional
+            Timeout in seconds for tactic execution, by default None.
+
+        Returns
+        -------
+        State
+            The new proof state after tactic execution.
+
+        Raises
+        ------
+        PetanqueError
+            If tactic execution fails.
+        TimeoutError
+            If tactic execution exceeds timeout.
+
+        Examples
+        --------
+        >>> with Pytanque("127.0.0.1", 8765) as client:
+        ...     state = client.start("./examples/foo.v", "addnC")
+        ...     # Execute induction tactic with verbose output
+        ...     state = client.run_tac(state, "induction n.", verbose=True)
+        ...     # Execute with timeout
+        ...     state = client.run_tac(state, "auto.", timeout=5)
         """
         if timeout and tac.endswith("."):
             tac = f"Timeout {timeout} {tac}"
@@ -205,9 +406,39 @@ class Pytanque:
                 print(f"\nGoal {i}:\n{g.pp}\n")
         return res
 
-    def goals(self, state: State, pretty: bool = True) -> List[Goal]:
+    def goals(self, state: State, pretty: bool = True) -> list[Goal]:
         """
-        Return the list of current goals.
+        Retrieve the current goals for a proof state.
+
+        Parameters
+        ----------
+        state : State
+            The proof state to query.
+        pretty : bool, optional
+            Whether to add pretty-printed representation to goals, by default True.
+
+        Returns
+        -------
+        list[Goal]
+            List of current goals. Each Goal contains:
+            - info : Any - Goal metadata
+            - hyps : list[GoalHyp] - List of hypotheses
+            - ty : str - Goal type
+            - pp : str, optional - Pretty-printed representation (if pretty=True)
+
+        Raises
+        ------
+        PetanqueError
+            If state is invalid.
+
+        Examples
+        --------
+        >>> with Pytanque("127.0.0.1", 8765) as client:
+        ...     state = client.start("./examples/foo.v", "addnC")
+        ...     goals = client.goals(state)
+        ...     print(f"Number of goals: {len(goals)}")
+        ...     for i, goal in enumerate(goals):
+        ...         print(f"Goal {i}: {goal.pp}")
         """
         resp = self.query(GoalsParams(state.st))
         if not resp.result:
@@ -222,34 +453,133 @@ class Pytanque:
 
     def premises(self, state: State) -> Any:
         """
-        Return the list of accessible premises.
+        Get the list of accessible premises (lemmas, definitions) for the current state.
+
+        Parameters
+        ----------
+        state : State
+            The proof state to query.
+
+        Returns
+        -------
+        Any
+            List of accessible premises/lemmas for the current proof state.
+
+        Raises
+        ------
+        PetanqueError
+            If state is invalid.
+
+        Examples
+        --------
+        >>> with Pytanque("127.0.0.1", 8765) as client:
+        ...     state = client.start("./examples/foo.v", "addnC")
+        ...     premises = client.premises(state)
+        ...     print(f"Available premises: {len(premises)}")
         """
         resp = self.query(PremisesParams(state.st))
         res = PremisesResponse.from_json(resp.result)
         logger.info(f"Retrieved {len(res.value)} premises")
         return res.value
 
-    def state_equal(self, st1: State, st2: State, kind: Inspect) -> Any:
+    def state_equal(self, st1: State, st2: State, kind: Optional[Inspect] = None) -> bool:
         """
-        Check if two states are equal.
+        Compare two proof states for equality.
+
+        Parameters
+        ----------
+        st1 : State
+            First state to compare.
+        st2 : State
+            Second state to compare.
+        kind : Inspect
+            Type of comparison (InspectPhysical or InspectGoals).
+
+        Returns
+        -------
+        bool
+            True if states are equal according to the specified comparison type.
+
+        Raises
+        ------
+        PetanqueError
+            If states are invalid.
+
+        Examples
+        --------
+        >>> from pytanque import Pytanque, inspectPhysical, inspectGoals
+        >>> with Pytanque("127.0.0.1", 8765) as client:
+        ...     state1 = client.start("./examples/foo.v", "addnC")
+        ...     state2 = client.run_tac(state1, "induction n.")
+        ...     # Compare physical state
+        ...     physical_equal = client.state_equal(state1, state2, inspectPhysical)
+        ...     # Compare goal structure
+        ...     goals_equal = client.state_equal(state1, state2, inspectGoals)
         """
         resp = self.query(StateEqualParams(kind, st1.st, st2.st))
         res = StateEqualResponse.from_json(resp.result)
         logger.info(f"States equality {st1.st} = {st2.st} : {res.value}")
         return res.value
 
-    def state_hash(self, state: State) -> Any:
+    def state_hash(self, state: State) -> int:
         """
-        Return the hash of a state.
+        Get a hash value for a proof state.
+
+        Parameters
+        ----------
+        state : State
+            The state to hash.
+
+        Returns
+        -------
+        int
+            Hash value of the state.
+
+        Raises
+        ------
+        PetanqueError
+            If state is invalid.
+
+        Examples
+        --------
+        >>> with Pytanque("127.0.0.1", 8765) as client:
+        ...     state = client.start("./examples/foo.v", "addnC")
+        ...     hash_value = client.state_hash(state)
+        ...     print(f"State hash: {hash_value}")
         """
         resp = self.query(StateHashParams(state.st))
         res = StateHashResponse.from_json(resp.result)
         logger.info(f"States hash {state.st} = {res.value}")
         return res.value
 
-    def toc(self, file: str) -> Any:
+    def toc(self, file: str) -> list[tuple[str, Any]]:
         """
-        Return the TOC of a file.
+        Get the table of contents (available definitions and theorems) for a Coq/Rocq file.
+
+        Parameters
+        ----------
+        file : str
+            Path to the Coq/Rocq file.
+
+        Returns
+        -------
+        list[tuple[str, Any]]
+            list of (name, definition) pairs representing available definitions and theorems.
+
+        Raises
+        ------
+        PetanqueError
+            If file cannot be loaded.
+        ValueError
+            If file path is invalid.
+
+        Examples
+        --------
+        >>> with Pytanque("127.0.0.1", 8765) as client:
+        ...     toc = client.toc("./examples/foo.v")
+        ...     print("Available definitions:")
+        ...     for name, definition in toc:
+        ...         print(f"  {name}")
         """
         path = os.path.abspath(file)
         uri = pathlib.Path(path).as_uri()
@@ -265,6 +595,22 @@ class Pytanque:
         exc_tb: Optional[TracebackType],
     ) -> None:
         """
-        Close the socket and exit.
+        Context manager exit method that automatically closes the connection.
+
+        Parameters
+        ----------
+        exc_type : Optional[Type[BaseException]]
+            Exception type if an exception occurred.
+        exc_val : Optional[BaseException]
+            Exception value if an exception occurred.
+        exc_tb : Optional[TracebackType]
+            Exception traceback if an exception occurred.
+
+        Examples
+        --------
+        >>> with Pytanque("127.0.0.1", 8765) as client:
+        ...     # Connection is automatically managed
+        ...     state = client.start("./examples/foo.v", "addnC")
+        ... # Connection is automatically closed here
         """
         self.close()
