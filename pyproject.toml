@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pytanque"
-version = "0.1.0"
+version = "0.2.0"
 description = ""
 authors = [
     "Guillaume Baudart <guillaume.baudart@inria.fr>",
@@ -8,10 +8,17 @@ authors = [
     "Laetitia Teodorescu <laetitia.teodorescu@inria.fr>"
 ]
 readme = "README.md"
-licence = "Apache-2.0"
+license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 python = "^3.10"
+
+[tool.poetry.group.docs.dependencies]
+sphinx = "^6.0.0"
+furo = "^2024.1.29"
+myst-parser = {extras = ["linkify"], version = "^2.0.0"}
+sphinx-autodoc-typehints = "^1.0.0"
+numpydoc = "^1.5.0"
 
 
 [build-system]

@@ -1,5 +1,10 @@
 # Pytanque
 
+[![Documentation](https://img.shields.io/badge/docs-latest-blue.svg)](https://llm4rocq.github.io/pytanque)
+[![Build Status](https://github.com/llm4rocq/pytanque/workflows/Documentation/badge.svg?branch=PetanqueV2)](https://github.com/llm4rocq/pytanque/actions)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/llm4rocq/pytanque/blob/main/LICENSE)
+
 Pytanque is a Python API for lightweight communication with the [Rocq](https://rocq-prover.org/) proof assistant via [coq-lsp](https://github.com/ejgallego/coq-lsp).
 
 ## Overview
@@ -23,7 +28,10 @@ Pytanque is a Python API for lightweight communication with the [Rocq](https://r
 First, install coq-lsp with the required dependencies:
 
 ```bash
+# Install dependencies
 opam install lwt logs coq.8.20.0
+
+# Pin the correct version of coq-lsp
 opam pin add coq-lsp https://github.com/ejgallego/coq-lsp.git#4112a0426a1ab43819879642e17c131a4f9e0281
 ```
 
@@ -118,6 +126,28 @@ You can launch all the tests with pytest.
 
 ```bash
 pytest -v .
+```
+
+## Documentation
+
+The complete API documentation is available at: [https://llm4rocq.github.io/pytanque](https://llm4rocq.github.io/pytanque)
+
+### Building Documentation Locally
+
+To build the documentation locally:
+
+```bash
+# Install documentation dependencies
+poetry install --with docs
+
+# Build the documentation
+cd docs
+poetry run sphinx-build -b html . _build/html
+
+# Open the documentation
+open _build/html/index.html  # macOS
+# or
+xdg-open _build/html/index.html  # Linux
 ```
 
 ## Development
