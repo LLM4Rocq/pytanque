@@ -56,6 +56,8 @@ Params = Union[
     StateHashParams,
     SetWorkspaceParams,
     TocParams,
+    AstParams,
+    AstAtPosParams
 ]
 
 logger = logging.getLogger(__name__)
@@ -94,8 +96,8 @@ class PetanqueError(Exception):
         self.message = message
 
 
-inspectPhysical = Inspect(InspectPhysical())
-inspectGoals = Inspect(InspectGoals())
+InspectPhysical = Inspect(InspectPhysical())
+InspectGoals = Inspect(InspectGoals())
 
 
 def mk_request(id: int, params: Params) -> Request:
@@ -146,6 +148,13 @@ class Pytanque:
     with Rocq/Coq through the Petanque server. It supports context manager protocol
     for automatic connection management.
 
+    Key features include:
+    - Execute tactics and commands with the run() method
+    - Access proof states with feedback containing all Rocq messages
+    - Parse AST of commands with ast() and ast_at_pos()
+    - Navigate file positions with get_state_at_pos() and get_root_state()
+    - Inspect goals, premises, and proof state information
+
     Parameters
     ----------
     host : str
@@ -168,8 +177,21 @@ class Pytanque:
     --------
     >>> from pytanque import Pytanque
     >>> with Pytanque("127.0.0.1", 8765) as client:
+    ...     # Start a proof
     ...     state = client.start("./examples/foo.v", "addnC")
-    ...     state = client.run_tac(state, "induction n.", verbose=True)
+    ...     
+    ...     # Execute commands and check feedback
+    ...     state = client.run(state, "induction n.", verbose=True)
+    ...     for level, msg in state.feedback:
+    ...         print(f"Rocq message: {msg}")
+    ...     
+    ...     # Get AST of a command
+    ...     ast = client.ast(state, "auto")
+    ...     print("AST:", ast)
+    ...     
+    ...     # Get state at specific position in file
+    ...     pos_state = client.get_state_at_pos("./examples/foo.v", line=3, character=0, offset=80)
+    ...     print(f"State at position: {pos_state.st}")
     """
 
     def __init__(self, host: str, port: int):
@@ -296,7 +318,41 @@ class Pytanque:
         text: str
     ) -> dict:
         """
-        Get the AST corresponding to `text` for the `state`.
+        Get the Abstract Syntax Tree (AST) of a command parsed at a given state.
+
+        Parameters
+        ----------
+        state : State
+            The proof state providing the parsing context.
+        text : str
+            The command text to parse (e.g., "induction n", "Search nat").
+
+        Returns
+        -------
+        dict
+            The AST representation of the parsed command.
+
+        Raises
+        ------
+        PetanqueError
+            If the text cannot be parsed in the given state context.
+
+        Examples
+        --------
+        >>> with Pytanque("127.0.0.1", 8765) as client:
+        ...     state = client.start("./examples/foo.v", "addnC")
+        ...     
+        ...     # Get AST for a tactic
+        ...     ast = client.ast(state, "induction n.")
+        ...     print("Tactic AST:", ast)
+        ...     
+        ...     # Get AST for a search command
+        ...     ast = client.ast(state, "Search nat.")
+        ...     print("Search AST:", ast)
+        ...     
+        ...     # Get AST for a complex expression
+        ...     ast = client.ast(state, "fun x => x + 1.")
+        ...     print("Expression AST:", ast)
         """
         resp = self.query(AstParams(state.st, text))
         res = resp.result["st"]
@@ -311,13 +367,51 @@ class Pytanque:
         offset: int
     ) -> dict:
         """
-        Get the AST at a certain position `line`, `character` and `offset` in `file`.
+        Get the Abstract Syntax Tree (AST) at a specific position in a file.
+
+        Parameters
+        ----------
+        file : str
+            Path to the Rocq/Coq file.
+        line : int
+            Line number (0-based indexing).
+        character : int
+            Character position within the line (0-based indexing).
+        offset : int
+            Byte offset from the beginning of the file.
+
+        Returns
+        -------
+        dict
+            The AST representation of the syntax element at the specified position.
+
+        Raises
+        ------
+        PetanqueError
+            If the position is invalid or the file cannot be parsed.
+        ValueError
+            If the file path is invalid.
+
+        Examples
+        --------
+        >>> with Pytanque("127.0.0.1", 8765) as client:
+        ...     # Get AST at specific position in file
+        ...     ast = client.ast_at_pos("./examples/foo.v", line=5, character=10, offset=150)
+        ...     print("AST at position:", ast)
+        ...     
+        ...     # Get AST at theorem declaration
+        ...     ast = client.ast_at_pos("./examples/foo.v", line=0, character=0, offset=0)
+        ...     print("Theorem declaration AST:", ast)
+        ...     
+        ...     # Get AST at proof step
+        ...     ast = client.ast_at_pos("./examples/foo.v", line=3, character=5, offset=80)
+        ...     print("Proof step AST:", ast)
         """
         path = os.path.abspath(file)
         uri = pathlib.Path(path).as_uri()
         pos = Position(line, character, offset)
         resp = self.query(AstAtPosParams(uri, pos))
-        res = resp.result["st"]
+        res = resp.result
         logger.info(f"AST at {pos.to_json_string()} in {uri}")
         return res
 
@@ -330,7 +424,60 @@ class Pytanque:
         opts: Optional[Opts] = None
     ) -> State:
         """
-        Get the state at position `line`, `character` and `offset` in `file`.
+        Get the proof state at a specific position in a file.
+
+        This method returns the proof state that would be active at the specified
+        position, allowing you to inspect the context, goals, and available tactics
+        at any point in a proof script.
+
+        Parameters
+        ----------
+        file : str
+            Path to the Rocq/Coq file.
+        line : int
+            Line number (0-based indexing).
+        character : int
+            Character position within the line (0-based indexing).
+        offset : int
+            Byte offset from the beginning of the file.
+        opts : Opts, optional
+            Options for proof state management, by default None.
+
+        Returns
+        -------
+        State
+            The proof state at the specified position, including:
+            - st : int - State identifier
+            - proof_finished : bool - Whether proof is complete at this point
+            - feedback : List[Tuple[int, str]] - Messages from Rocq up to this point
+            - hash : int, optional - State hash
+
+        Raises
+        ------
+        PetanqueError
+            If the position is invalid or the file cannot be processed.
+        ValueError
+            If the file path is invalid.
+
+        Examples
+        --------
+        >>> with Pytanque("127.0.0.1", 8765) as client:
+        ...     # Get state at beginning of proof
+        ...     state = client.get_state_at_pos("./examples/foo.v", line=2, character=0, offset=50)
+        ...     print(f"State at start: {state.st}, finished: {state.proof_finished}")
+        ...     
+        ...     # Get state in middle of proof
+        ...     state = client.get_state_at_pos("./examples/foo.v", line=5, character=10, offset=120)
+        ...     goals = client.goals(state)
+        ...     print(f"Goals at position: {len(goals)}")
+        ...     
+        ...     # Get state at end of proof
+        ...     state = client.get_state_at_pos("./examples/foo.v", line=8, character=5, offset=200)
+        ...     print(f"Proof finished: {state.proof_finished}")
+        ...     
+        ...     # Check feedback at specific position
+        ...     for level, msg in state.feedback:
+        ...         print(f"Feedback level {level}: {msg}")
         """
         path = os.path.abspath(file)
         uri = pathlib.Path(path).as_uri()
@@ -346,7 +493,54 @@ class Pytanque:
         opts: Optional[Opts] = None
     ) -> State:
         """
-        Get the root state in `file`.
+        Get the initial (root) state of a document.
+
+        This method returns the very first state of the document, before any
+        commands or proofs have been executed. It represents the initial
+        environment with all imports and definitions loaded.
+
+        Parameters
+        ----------
+        file : str
+            Path to the Rocq/Coq file.
+        opts : Opts, optional
+            Options for proof state management, by default None.
+
+        Returns
+        -------
+        State
+            The root state of the document, including:
+            - st : int - State identifier for the initial state
+            - proof_finished : bool - Always False for root state
+            - feedback : List[Tuple[int, str]] - Initial messages (imports, etc.)
+            - hash : int, optional - State hash
+
+        Raises
+        ------
+        PetanqueError
+            If the file cannot be loaded or processed.
+        ValueError
+            If the file path is invalid.
+
+        Examples
+        --------
+        >>> with Pytanque("127.0.0.1", 8765) as client:
+        ...     # Get the root state of a file
+        ...     root_state = client.get_root_state("./examples/foo.v")
+        ...     print(f"Root state: {root_state.st}")
+        ...     print(f"Proof finished: {root_state.proof_finished}")  # Always False
+        ...     
+        ...     # Check what's available in the initial environment
+        ...     premises = client.premises(root_state)
+        ...     print(f"Available in root context: {len(premises)} premises")
+        ...     
+        ...     # Compare with state at specific position
+        ...     pos_state = client.get_state_at_pos("./examples/foo.v", line=3, character=0, offset=80)
+        ...     print(f"Root state: {root_state.st}, Position state: {pos_state.st}")
+        ...     
+        ...     # Check initial feedback
+        ...     for level, msg in root_state.feedback:
+        ...         print(f"Initial feedback level {level}: {msg}")
         """
         path = os.path.abspath(file)
         uri = pathlib.Path(path).as_uri()
@@ -443,41 +637,65 @@ class Pytanque:
         timeout: Optional[int] = None,
     ) -> State:
         """
-        Execute a tactic on the current proof state.
+        Execute a command on the current proof state.
+
+        This method replaces run_tac and supports both tactics and other Rocq commands
+        like Search, Print, Check, etc. The returned state includes feedback containing
+        all messages from Rocq (errors, warnings, search results, etc.).
 
         Parameters
         ----------
         state : State
             The current proof state.
         cmd : str
-            The tactic to execute (e.g., "induction n.", "auto.", "lia.").
+            The command to execute. Can be:
+            - Tactics: "induction n.", "auto.", "lia."
+            - Search commands: "Search nat.", "SearchPattern (_ + _)."
+            - Print commands: "Print list.", "Print Assumptions."
+            - Check commands: "Check (fun x => x)."
         opts : Opts, optional
             Options for proof state management, by default None.
         verbose : bool, optional
-            Whether to print goals after tactic execution, by default False.
+            Whether to print goals after command execution, by default False.
         timeout : int, optional
-            Timeout in seconds for tactic execution, by default None.
+            Timeout in seconds for command execution, by default None.
 
         Returns
         -------
         State
-            The new proof state after tactic execution.
+            The new proof state after command execution.
+            The state.feedback field contains a list of (level, message) tuples with
+            all messages from Rocq including errors, warnings, and command outputs.
 
         Raises
         ------
         PetanqueError
-            If tactic execution fails.
+            If command execution fails.
         TimeoutError
-            If tactic execution exceeds timeout.
+            If command execution exceeds timeout.
 
         Examples
         --------
         >>> with Pytanque("127.0.0.1", 8765) as client:
         ...     state = client.start("./examples/foo.v", "addnC")
-        ...     # Execute induction tactic with verbose output
-        ...     state = client.run_tac(state, "induction n.", verbose=True)
+        ...     
+        ...     # Execute tactic
+        ...     state = client.run(state, "induction n.", verbose=True)
+        ...     
+        ...     # Execute search command and check feedback
+        ...     state = client.run(state, "Search nat.")
+        ...     for level, msg in state.feedback:
+        ...         print(f"Level {level}: {msg}")
+        ...     
+        ...     # Execute print command
+        ...     state = client.run(state, "Print list.")
+        ...     print("Print output in feedback:", state.feedback)
+        ...     
+        ...     # Execute check command
+        ...     state = client.run(state, "Check (1 + 1).")
+        ...     
         ...     # Execute with timeout
-        ...     state = client.run_tac(state, "auto.", timeout=5)
+        ...     state = client.run(state, "auto.", timeout=5)
         """
         if timeout and cmd.endswith("."):
             cmd = f"Timeout {timeout} {cmd}"
@@ -590,14 +808,14 @@ class Pytanque:
 
         Examples
         --------
-        >>> from pytanque import Pytanque, inspectPhysical, inspectGoals
+        >>> from pytanque import Pytanque, InspectPhysical, InspectGoals
         >>> with Pytanque("127.0.0.1", 8765) as client:
         ...     state1 = client.start("./examples/foo.v", "addnC")
-        ...     state2 = client.run_tac(state1, "induction n.")
+        ...     state2 = client.run(state1, "induction n.")
         ...     # Compare physical state
-        ...     physical_equal = client.state_equal(state1, state2, inspectPhysical)
+        ...     physical_equal = client.state_equal(state1, state2, InspectPhysical)
         ...     # Compare goal structure
-        ...     goals_equal = client.state_equal(state1, state2, inspectGoals)
+        ...     goals_equal = client.state_equal(state1, state2, InspectGoals)
         """
         resp = self.query(StateEqualParams(kind, st1.st, st2.st))
         res = StateEqualResponse.from_json(resp.result)

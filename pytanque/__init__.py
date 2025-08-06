@@ -1,4 +1,4 @@
-from .client import Pytanque, State, PetanqueError, inspectPhysical, inspectGoals
+from .client import Pytanque, State, PetanqueError, InspectPhysical, InspectGoals
 from .protocol import (
     Request,
     Response,
@@ -34,8 +34,8 @@ __all__ = [
     "State",
     "GoalsResponse",
     "PremisesResponse",
-    "inspectPhysical",
-    "inspectGoals",
+    "InspectPhysical",
+    "InspectGoals",
     "StateEqualParams",
     "StateEqualResponse",
     "StateHashParams",
