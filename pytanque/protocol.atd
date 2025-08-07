@@ -108,7 +108,7 @@ type inspect = [
 ]
 
 type state_equal_params = {
-    kind: inspect option;
+    kind: inspect list;
     st1: int;
     st2: int;
 }

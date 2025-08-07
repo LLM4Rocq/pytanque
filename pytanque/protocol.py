@@ -489,7 +489,7 @@ class Inspect:
 class StateEqualParams:
     """Original type: state_equal_params = { ... }"""
 
-    kind: Optional[Inspect]
+    kind: List[Inspect]
     st1: int
     st2: int
 
@@ -498,7 +498,7 @@ class StateEqualParams:
         if isinstance(x, dict):
             return cls(
                 kind=(
-                    _atd_read_option(Inspect.from_json)(x["kind"])
+                    _atd_read_list(Inspect.from_json)(x["kind"])
                     if "kind" in x
                     else _atd_missing_json_field("StateEqualParams", "kind")
                 ),
@@ -518,7 +518,7 @@ class StateEqualParams:
 
     def to_json(self) -> Any:
         res: Dict[str, Any] = {}
-        res["kind"] = _atd_write_option((lambda x: x.to_json()))(self.kind)
+        res["kind"] = _atd_write_list((lambda x: x.to_json()))(self.kind)
         res["st1"] = _atd_write_int(self.st1)
         res["st2"] = _atd_write_int(self.st2)
         return res

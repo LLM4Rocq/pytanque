@@ -798,7 +798,8 @@ class Pytanque:
         ...     # Compare goal structure
         ...     goals_equal = client.state_equal(state1, state2, InspectGoals)
         """
-        resp = self.query(StateEqualParams(kind, st1.st, st2.st))
+        # Hack: JSON representation of variant without arg should be a list, e.g., ["Physical"]
+        resp = self.query(StateEqualParams([kind], st1.st, st2.st))
         res = StateEqualResponse.from_json(resp.result)
         logger.info(f"States equality {st1.st} = {st2.st} : {res.value}")
         return res.value

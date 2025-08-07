@@ -179,9 +179,6 @@ class TestStateEqualMethod:
 
     def test_state_equal_example(self, server_config, example_files, petanque_server):
         """Test state_equal method example."""
-        pytest.skip(
-            "state_equal has serialization issues with Inspect parameters - skipping for now"
-        )
         with Pytanque("127.0.0.1", 8765) as client:
             # Create initial state
             state1 = client.start("./examples/foo.v", "addnC")
