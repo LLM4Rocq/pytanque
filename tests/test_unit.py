@@ -178,10 +178,37 @@ class TestStateEqualMethod:
     """Test state_equal method examples."""
 
     def test_state_equal_example(self, server_config, example_files, petanque_server):
-        """Test state_equal method example - simplified version."""
+        """Test state_equal method example."""
         pytest.skip(
             "state_equal has serialization issues with Inspect parameters - skipping for now"
         )
+        with Pytanque("127.0.0.1", 8765) as client:
+            # Create initial state
+            state1 = client.start("./examples/foo.v", "addnC")
+
+            # Create another state from the same starting point
+            state2 = client.start("./examples/foo.v", "addnC")
+
+            # States should be equal both physically and in terms of goals
+            physical_equal = client.state_equal(state1, state2, InspectPhysical)
+            goals_equal = client.state_equal(state1, state2, InspectGoals)
+
+            assert physical_equal == True
+            assert goals_equal == True
+            print(f"Physical equal: {physical_equal}, Goals equal: {goals_equal}")
+
+            # Run a tactic on one state
+            state3 = client.run(state1, "induction n.")
+
+            # States should no longer be equal
+            physical_equal_after = client.state_equal(state1, state3, InspectPhysical)
+            goals_equal_after = client.state_equal(state1, state3, InspectGoals)
+
+            assert physical_equal_after == False
+            assert goals_equal_after == False
+            print(
+                f"After tactic - Physical equal: {physical_equal_after}, Goals equal: {goals_equal_after}"
+            )
 
 
 class TestStateHashMethod:
@@ -271,12 +298,12 @@ class TestASTMethods:
         """Test ast_at_pos method."""
         with Pytanque("127.0.0.1", 8765) as client:
             # Get AST at theorem declaration
-            ast = client.ast_at_pos("./examples/foo.v", line=3, character=28, offset=0)
+            ast = client.ast_at_pos("./examples/foo.v", line=3, character=28)
             print("Theorem declaration AST:", ast)
             assert isinstance(ast, dict)
 
             # Get AST at proof step
-            ast = client.ast_at_pos("./examples/foo.v", line=3, character=5, offset=80)
+            ast = client.ast_at_pos("./examples/foo.v", line=3, character=5)
             print("Proof step AST:", ast)
             assert isinstance(ast, dict)
 
@@ -290,26 +317,20 @@ class TestPositionBasedMethods:
         """Test get_state_at_pos method."""
         with Pytanque("127.0.0.1", 8765) as client:
             # Get state at beginning of proof
-            state = client.get_state_at_pos(
-                "./examples/foo.v", line=4, character=0, offset=0
-            )
+            state = client.get_state_at_pos("./examples/foo.v", line=4, character=0)
             print(f"State at start: {state.st}, finished: {state.proof_finished}")
             assert state.st is not None
             assert not state.proof_finished
             assert hasattr(state, "feedback")
 
             # Get state in middle of proof and check goals
-            state = client.get_state_at_pos(
-                "./examples/foo.v", line=5, character=2, offset=0
-            )
+            state = client.get_state_at_pos("./examples/foo.v", line=5, character=2)
             goals = client.goals(state)
             print(f"Goals at position: {goals}")
             assert goals
 
             # Get state at end of proof
-            state = client.get_state_at_pos(
-                "./examples/foo.v", line=7, character=0, offset=0
-            )
+            state = client.get_state_at_pos("./examples/foo.v", line=7, character=0)
             print(f"Proof finished: {state.proof_finished}")
             assert state.proof_finished
 

@@ -112,9 +112,7 @@ class TestIntegratedWorkflow:
             print(f"Root feedback messages: {len(root_state.feedback)}")
 
             # Get state at specific position
-            pos_state = client.get_state_at_pos(
-                "./examples/foo.v", line=1, character=0, offset=20
-            )
+            pos_state = client.get_state_at_pos("./examples/foo.v", line=1, character=0)
             print(f"Position state: {pos_state.st}")
 
             # Start proof and use run method with feedback
@@ -130,9 +128,7 @@ class TestIntegratedWorkflow:
             print(f"AST structure: {type(ast)}")
 
             # Get AST at file position
-            file_ast = client.ast_at_pos(
-                "./examples/foo.v", line=2, character=0, offset=40
-            )
+            file_ast = client.ast_at_pos("./examples/foo.v", line=2, character=0)
             print(f"File AST: {type(file_ast)}")
 
             # Execute search with run method and inspect feedback

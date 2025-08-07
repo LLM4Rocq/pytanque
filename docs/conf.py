@@ -5,36 +5,36 @@ import sys
 
 # -- Path setup --------------------------------------------------------------
 # Add the parent directory to the path so we can import pytanque
-sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath(".."))
 
 # -- Project information -----------------------------------------------------
-project = 'Pytanque'
-copyright = '2025, Pytanque Contributors'
-author = 'Pytanque Contributors'
+project = "Pytanque"
+copyright = "2025, Pytanque Contributors"
+author = "Pytanque Contributors"
 
 # The full version, including alpha/beta/rc tags
-release = '0.2.0'
+release = "0.2.0"
 
 # -- General configuration ---------------------------------------------------
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
-    'sphinx.ext.linkcode',
-    'sphinx.ext.intersphinx',
-    'myst_parser',
-    'numpydoc',
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.linkcode",
+    "sphinx.ext.intersphinx",
+    "myst_parser",
+    "numpydoc",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 # -- Options for HTML output -------------------------------------------------
-html_theme = 'furo'
-html_static_path = ['_static']
+html_theme = "furo"
+html_static_path = ["_static"]
 
 # HTML title
 html_title = "Pytanque Documentation"
@@ -74,9 +74,7 @@ html_theme_options = {
 }
 
 # Add external links to the navigation
-html_context = {
-    "default_mode": "light"
-}
+html_context = {"default_mode": "light"}
 
 # -- Extension configuration -------------------------------------------------
 
@@ -87,61 +85,62 @@ numpydoc_class_members_toctree = False
 
 # Autodoc settings
 autodoc_default_options = {
-    'members': True,
-    'undoc-members': True,
-    'show-inheritance': True,
-    'special-members': '__init__',
+    "members": True,
+    "undoc-members": True,
+    "show-inheritance": True,
+    "special-members": "__init__",
 }
 
 # Prevent double colons in section headers
-autodoc_typehints = 'description'
-autodoc_typehints_description_target = 'documented'
+autodoc_typehints = "description"
+autodoc_typehints_description_target = "documented"
 
 # Autosummary settings
 autosummary_generate = True
 
 # Intersphinx mapping
 intersphinx_mapping = {
-    'python': ('https://docs.python.org/3', None),
+    "python": ("https://docs.python.org/3", None),
 }
 
 # MyST parser settings
 myst_enable_extensions = [
-    'colon_fence',
-    'deflist',
-    'dollarmath',
-    'fieldlist',
-    'html_admonition',
-    'html_image',
-    'linkify',
-    'replacements',
-    'smartquotes',
-    'strikethrough',
-    'substitution',
-    'tasklist',
+    "colon_fence",
+    "deflist",
+    "dollarmath",
+    "fieldlist",
+    "html_admonition",
+    "html_image",
+    "linkify",
+    "replacements",
+    "smartquotes",
+    "strikethrough",
+    "substitution",
+    "tasklist",
 ]
+
 
 # Linkcode configuration - make [source] buttons link to GitHub
 def linkcode_resolve(domain, info):
-    if domain != 'py':
+    if domain != "py":
         return None
-    if not info['module']:
+    if not info["module"]:
         return None
-    
+
     import importlib
     import inspect
-    
-    filename = info['module'].replace('.', '/')
+
+    filename = info["module"].replace(".", "/")
     base_url = f"https://github.com/llm4rocq/pytanque/blob/PetanqueV2/{filename}.py"
-    
+
     try:
         # Import the module
-        mod = importlib.import_module(info['module'])
-        
+        mod = importlib.import_module(info["module"])
+
         # Get the object by traversing the attribute path
         obj = mod
-        parts = info['fullname'].split('.')
-        
+        parts = info["fullname"].split(".")
+
         # The fullname contains the class and method names, not the module name
         # So we don't skip any parts - we traverse the full path
         for attr_name in parts:
@@ -149,7 +148,7 @@ def linkcode_resolve(domain, info):
                 obj = getattr(obj, attr_name)
             else:
                 return base_url
-        
+
         # Try to get the source lines and line number
         try:
             source_lines, start_lineno = inspect.getsourcelines(obj)
@@ -161,13 +160,13 @@ def linkcode_resolve(domain, info):
         except (OSError, TypeError):
             # If we can't get source lines, try to get line number another way
             try:
-                if hasattr(obj, '__code__'):
+                if hasattr(obj, "__code__"):
                     lineno = obj.__code__.co_firstlineno
                     if lineno > 0:
                         return f"{base_url}#L{lineno}"
             except:
                 pass
             return base_url
-            
+
     except (ImportError, AttributeError):
         return base_url

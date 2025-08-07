@@ -32,7 +32,7 @@ First, install coq-lsp with the required dependencies:
 opam install lwt logs coq.8.20.0
 
 # Pin the correct version of coq-lsp
-opam pin add coq-lsp https://github.com/ejgallego/coq-lsp.git#4112a0426a1ab43819879642e17c131a4f9e0281
+opam pin add coq-lsp https://github.com/ejgallego/coq-lsp.git#v8.20
 ```
 
 ### Install Pytanque
@@ -102,8 +102,8 @@ See also the notebook `examples/getting_started.ipynb` for more examples.
 ### Advanced Features
 
 - **`ast(state, text)`**: Parse command to AST
-- **`ast_at_pos(file, line, char, offset)`**: Get AST at file position
-- **`get_state_at_pos(file, line, char, offset)`**: Get proof state at position
+- **`ast_at_pos(file, line, char)`**: Get AST at file position
+- **`get_state_at_pos(file, line, char)`**: Get proof state at position
 - **`get_root_state(file)`**: Get initial document state
 - **`state_equal(st1, st2, kind)`**: Compare proof states
 - **`state_hash(state)`**: Get state hash

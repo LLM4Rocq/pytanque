@@ -9,13 +9,13 @@ logging.getLogger("pytanque.client").setLevel(logging.INFO)
 # First launch the server
 pet_port = 8777
 pet_server = subprocess.Popen(
-            ["pet-server", "-p", str(pet_port)],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
+    ["pet-server", "-p", str(pet_port)],
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE,
+    text=True,
+)
 
-time.sleep(5) # Wait for pet-server to start
+time.sleep(5)  # Wait for pet-server to start
 
 # You can now interact with the server using Pytanque
 with Pytanque("127.0.0.1", pet_port) as pet:

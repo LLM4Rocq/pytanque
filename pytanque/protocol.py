@@ -909,7 +909,6 @@ class Position:
 
     line: int
     character: int
-    offset: int
 
     @classmethod
     def from_json(cls, x: Any) -> "Position":
@@ -925,11 +924,6 @@ class Position:
                     if "character" in x
                     else _atd_missing_json_field("Position", "character")
                 ),
-                offset=(
-                    _atd_read_int(x["offset"])
-                    if "offset" in x
-                    else _atd_missing_json_field("Position", "offset")
-                ),
             )
         else:
             _atd_bad_json("Position", x)
@@ -938,7 +932,6 @@ class Position:
         res: Dict[str, Any] = {}
         res["line"] = _atd_write_int(self.line)
         res["character"] = _atd_write_int(self.character)
-        res["offset"] = _atd_write_int(self.offset)
         return res
 
     @classmethod

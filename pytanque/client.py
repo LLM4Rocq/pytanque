@@ -9,7 +9,6 @@ from typing import (
     Any,
     Optional,
     Type,
-
 )
 from typing_extensions import Self
 from types import TracebackType
@@ -42,7 +41,7 @@ from .protocol import (
     TocParams,
     TocResponse,
     _atd_missing_json_field,
-    _atd_bad_json
+    _atd_bad_json,
 )
 
 Params = Union[
@@ -57,7 +56,7 @@ Params = Union[
     SetWorkspaceParams,
     TocParams,
     AstParams,
-    AstAtPosParams
+    AstAtPosParams,
 ]
 
 logger = logging.getLogger(__name__)
@@ -179,18 +178,18 @@ class Pytanque:
     >>> with Pytanque("127.0.0.1", 8765) as client:
     ...     # Start a proof
     ...     state = client.start("./examples/foo.v", "addnC")
-    ...     
+    ...
     ...     # Execute commands and check feedback
     ...     state = client.run(state, "induction n.", verbose=True)
     ...     for level, msg in state.feedback:
     ...         print(f"Rocq message: {msg}")
-    ...     
+    ...
     ...     # Get AST of a command
     ...     ast = client.ast(state, "auto")
     ...     print("AST:", ast)
-    ...     
+    ...
     ...     # Get state at specific position in file
-    ...     pos_state = client.get_state_at_pos("./examples/foo.v", line=3, character=0, offset=80)
+    ...     pos_state = client.get_state_at_pos("./examples/foo.v", line=3, character=0)
     ...     print(f"State at position: {pos_state.st}")
     """
 
@@ -312,11 +311,7 @@ class Pytanque:
             failure = Failure.from_json_string(raw)
             raise PetanqueError(failure.error.code, failure.error.message)
 
-    def ast(
-        self,
-        state: State,
-        text: str
-    ) -> dict:
+    def ast(self, state: State, text: str) -> dict:
         """
         Get the Abstract Syntax Tree (AST) of a command parsed at a given state.
 
@@ -341,15 +336,15 @@ class Pytanque:
         --------
         >>> with Pytanque("127.0.0.1", 8765) as client:
         ...     state = client.start("./examples/foo.v", "addnC")
-        ...     
+        ...
         ...     # Get AST for a tactic
         ...     ast = client.ast(state, "induction n.")
         ...     print("Tactic AST:", ast)
-        ...     
+        ...
         ...     # Get AST for a search command
         ...     ast = client.ast(state, "Search nat.")
         ...     print("Search AST:", ast)
-        ...     
+        ...
         ...     # Get AST for a complex expression
         ...     ast = client.ast(state, "fun x => x + 1.")
         ...     print("Expression AST:", ast)
@@ -364,7 +359,6 @@ class Pytanque:
         file: str,
         line: int,
         character: int,
-        offset: int
     ) -> dict:
         """
         Get the Abstract Syntax Tree (AST) at a specific position in a file.
@@ -377,8 +371,6 @@ class Pytanque:
             Line number (0-based indexing).
         character : int
             Character position within the line (0-based indexing).
-        offset : int
-            Byte offset from the beginning of the file.
 
         Returns
         -------
@@ -396,32 +388,27 @@ class Pytanque:
         --------
         >>> with Pytanque("127.0.0.1", 8765) as client:
         ...     # Get AST at specific position in file
-        ...     ast = client.ast_at_pos("./examples/foo.v", line=5, character=10, offset=150)
+        ...     ast = client.ast_at_pos("./examples/foo.v", line=5, character=10)
         ...     print("AST at position:", ast)
-        ...     
+        ...
         ...     # Get AST at theorem declaration
-        ...     ast = client.ast_at_pos("./examples/foo.v", line=0, character=0, offset=0)
+        ...     ast = client.ast_at_pos("./examples/foo.v", line=0, character=0)
         ...     print("Theorem declaration AST:", ast)
-        ...     
+        ...
         ...     # Get AST at proof step
-        ...     ast = client.ast_at_pos("./examples/foo.v", line=3, character=5, offset=80)
+        ...     ast = client.ast_at_pos("./examples/foo.v", line=3, character=5)
         ...     print("Proof step AST:", ast)
         """
         path = os.path.abspath(file)
         uri = pathlib.Path(path).as_uri()
-        pos = Position(line, character, offset)
+        pos = Position(line, character)
         resp = self.query(AstAtPosParams(uri, pos))
         res = resp.result
         logger.info(f"AST at {pos.to_json_string()} in {uri}")
         return res
 
     def get_state_at_pos(
-        self,
-        file: str,
-        line: int,
-        character: int,
-        offset: int,
-        opts: Optional[Opts] = None
+        self, file: str, line: int, character: int, opts: Optional[Opts] = None
     ) -> State:
         """
         Get the proof state at a specific position in a file.
@@ -438,8 +425,6 @@ class Pytanque:
             Line number (0-based indexing).
         character : int
             Character position within the line (0-based indexing).
-        offset : int
-            Byte offset from the beginning of the file.
         opts : Opts, optional
             Options for proof state management, by default None.
 
@@ -463,35 +448,31 @@ class Pytanque:
         --------
         >>> with Pytanque("127.0.0.1", 8765) as client:
         ...     # Get state at beginning of proof
-        ...     state = client.get_state_at_pos("./examples/foo.v", line=2, character=0, offset=50)
+        ...     state = client.get_state_at_pos("./examples/foo.v", line=2, character=0)
         ...     print(f"State at start: {state.st}, finished: {state.proof_finished}")
-        ...     
+        ...
         ...     # Get state in middle of proof
-        ...     state = client.get_state_at_pos("./examples/foo.v", line=5, character=10, offset=120)
+        ...     state = client.get_state_at_pos("./examples/foo.v", line=5, character=10)
         ...     goals = client.goals(state)
         ...     print(f"Goals at position: {len(goals)}")
-        ...     
+        ...
         ...     # Get state at end of proof
-        ...     state = client.get_state_at_pos("./examples/foo.v", line=8, character=5, offset=200)
+        ...     state = client.get_state_at_pos("./examples/foo.v", line=8, character=5)
         ...     print(f"Proof finished: {state.proof_finished}")
-        ...     
+        ...
         ...     # Check feedback at specific position
         ...     for level, msg in state.feedback:
         ...         print(f"Feedback level {level}: {msg}")
         """
         path = os.path.abspath(file)
         uri = pathlib.Path(path).as_uri()
-        pos = Position(line, character, offset)
+        pos = Position(line, character)
         resp = self.query(GetStateAtPosParams(uri, pos, opts))
         res = State.from_json(resp.result)
         logger.info(f"Get state at {pos.to_json_string()} in {uri} success")
         return res
 
-    def get_root_state(
-        self,
-        file: str,
-        opts: Optional[Opts] = None
-    ) -> State:
+    def get_root_state(self, file: str, opts: Optional[Opts] = None) -> State:
         """
         Get the initial (root) state of a document.
 
@@ -529,15 +510,15 @@ class Pytanque:
         ...     root_state = client.get_root_state("./examples/foo.v")
         ...     print(f"Root state: {root_state.st}")
         ...     print(f"Proof finished: {root_state.proof_finished}")  # Always False
-        ...     
+        ...
         ...     # Check what's available in the initial environment
         ...     premises = client.premises(root_state)
         ...     print(f"Available in root context: {len(premises)} premises")
-        ...     
+        ...
         ...     # Compare with state at specific position
-        ...     pos_state = client.get_state_at_pos("./examples/foo.v", line=3, character=0, offset=80)
+        ...     pos_state = client.get_state_at_pos("./examples/foo.v", line=3, character=0)
         ...     print(f"Root state: {root_state.st}, Position state: {pos_state.st}")
-        ...     
+        ...
         ...     # Check initial feedback
         ...     for level, msg in root_state.feedback:
         ...         print(f"Initial feedback level {level}: {msg}")
@@ -678,22 +659,22 @@ class Pytanque:
         --------
         >>> with Pytanque("127.0.0.1", 8765) as client:
         ...     state = client.start("./examples/foo.v", "addnC")
-        ...     
+        ...
         ...     # Execute tactic
         ...     state = client.run(state, "induction n.", verbose=True)
-        ...     
+        ...
         ...     # Execute search command and check feedback
         ...     state = client.run(state, "Search nat.")
         ...     for level, msg in state.feedback:
         ...         print(f"Level {level}: {msg}")
-        ...     
+        ...
         ...     # Execute print command
         ...     state = client.run(state, "Print list.")
         ...     print("Print output in feedback:", state.feedback)
-        ...     
+        ...
         ...     # Execute check command
         ...     state = client.run(state, "Check (1 + 1).")
-        ...     
+        ...
         ...     # Execute with timeout
         ...     state = client.run(state, "auto.", timeout=5)
         """
@@ -783,7 +764,7 @@ class Pytanque:
         logger.info(f"Retrieved {len(res.value)} premises")
         return res.value
 
-    def state_equal(self, st1: State, st2: State, kind: Optional[Inspect] = None) -> bool:
+    def state_equal(self, st1: State, st2: State, kind: Inspect) -> bool:
         """
         Compare two proof states for equality.
 

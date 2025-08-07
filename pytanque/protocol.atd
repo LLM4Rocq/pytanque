@@ -29,7 +29,6 @@ type opts = {
 type position = {
     line: int;
     character: int;
-    offset: int
 }
 
 type ast_params = {
