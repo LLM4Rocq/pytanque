@@ -45,7 +45,7 @@ html_logo = None
 # Furo theme options
 html_theme_options = {
     "source_repository": "https://github.com/llm4rocq/pytanque",
-    "source_branch": "PetanqueV2",
+    "source_branch": "main",
     "source_directory": "docs/",
     "navigation_with_keys": True,
     "top_of_page_button": "edit",
@@ -131,7 +131,7 @@ def linkcode_resolve(domain, info):
     import inspect
 
     filename = info["module"].replace(".", "/")
-    base_url = f"https://github.com/llm4rocq/pytanque/blob/PetanqueV2/{filename}.py"
+    base_url = f"https://github.com/llm4rocq/pytanque/blob/main/{filename}.py"
 
     try:
         # Import the module

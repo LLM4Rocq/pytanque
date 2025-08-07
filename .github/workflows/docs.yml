@@ -2,9 +2,9 @@ name: Documentation
 
 on:
   push:
-    branches: [main, PetanqueV2]
+    branches: [main]
   pull_request:
-    branches: [main, PetanqueV2]
+    branches: [main]
 
 permissions:
   contents: read
@@ -56,7 +56,7 @@ jobs:
           path: docs/_build/html
 
   deploy:
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/PetanqueV2'
+    if: github.ref == 'refs/heads/main'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
