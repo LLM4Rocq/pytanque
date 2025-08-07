@@ -81,7 +81,7 @@ class PetanqueError(Exception):
     message : str
         Error description.
 
-    Example
+    Examples
     --------
     >>> from pytanque import Pytanque, PetanqueError
     >>> try:
@@ -173,7 +173,7 @@ class Pytanque:
     socket : socket.socket
         TCP socket for server communication.
 
-    Example
+    Examples
     --------
     >>> from pytanque import Pytanque
     >>> with Pytanque("127.0.0.1", 8765) as client:
@@ -205,7 +205,7 @@ class Pytanque:
         port : int
             The port number of the Petanque server.
 
-        Example
+        Examples
         --------
         >>> client = Pytanque("127.0.0.1", 8765)
         >>> client.connect()
@@ -226,7 +226,7 @@ class Pytanque:
         OSError
             If socket creation fails.
 
-        Example
+        Examples
         --------
         >>> client = Pytanque("127.0.0.1", 8765)
         >>> client.connect()
@@ -239,7 +239,7 @@ class Pytanque:
         """
         Close the connection to the Petanque server.
 
-        Example
+        Examples
         --------
         >>> client = Pytanque("127.0.0.1", 8765)
         >>> client.connect()
@@ -278,7 +278,7 @@ class Pytanque:
         ValueError
             If the response format is invalid.
 
-        Example
+        Examples
         --------
         >>> from pytanque.protocol import StartParams
         >>> client = Pytanque("127.0.0.1", 8765)
@@ -337,7 +337,7 @@ class Pytanque:
         PetanqueError
             If the text cannot be parsed in the given state context.
 
-        Example
+        Examples
         --------
         >>> with Pytanque("127.0.0.1", 8765) as client:
         ...     state = client.start("./examples/foo.v", "addnC")
@@ -392,7 +392,7 @@ class Pytanque:
         ValueError
             If the file path is invalid.
 
-        Example
+        Examples
         --------
         >>> with Pytanque("127.0.0.1", 8765) as client:
         ...     # Get AST at specific position in file
@@ -459,7 +459,7 @@ class Pytanque:
         ValueError
             If the file path is invalid.
 
-        Example
+        Examples
         --------
         >>> with Pytanque("127.0.0.1", 8765) as client:
         ...     # Get state at beginning of proof
@@ -522,7 +522,7 @@ class Pytanque:
         ValueError
             If the file path is invalid.
 
-        Example
+        Examples
         --------
         >>> with Pytanque("127.0.0.1", 8765) as client:
         ...     # Get the root state of a file
@@ -585,7 +585,7 @@ class Pytanque:
         ValueError
             If file path is invalid.
 
-        Example
+        Examples
         --------
         >>> with Pytanque("127.0.0.1", 8765) as client:
         ...     state = client.start("./examples/foo.v", "addnC")
@@ -618,7 +618,7 @@ class Pytanque:
         PetanqueError
             If directory is invalid or inaccessible.
 
-        Example
+        Examples
         --------
         >>> with Pytanque("127.0.0.1", 8765) as client:
         ...     client.set_workspace(debug=False, dir="./examples/")
@@ -674,7 +674,7 @@ class Pytanque:
         TimeoutError
             If command execution exceeds timeout.
 
-        Example
+        Examples
         --------
         >>> with Pytanque("127.0.0.1", 8765) as client:
         ...     state = client.start("./examples/foo.v", "addnC")
@@ -732,7 +732,7 @@ class Pytanque:
         PetanqueError
             If state is invalid.
 
-        Example
+        Examples
         --------
         >>> with Pytanque("127.0.0.1", 8765) as client:
         ...     state = client.start("./examples/foo.v", "addnC")
@@ -771,7 +771,7 @@ class Pytanque:
         PetanqueError
             If state is invalid.
 
-        Example
+        Examples
         --------
         >>> with Pytanque("127.0.0.1", 8765) as client:
         ...     state = client.start("./examples/foo.v", "addnC")
@@ -806,7 +806,7 @@ class Pytanque:
         PetanqueError
             If states are invalid.
 
-        Example
+        Examples
         --------
         >>> from pytanque import Pytanque, InspectPhysical, InspectGoals
         >>> with Pytanque("127.0.0.1", 8765) as client:
@@ -841,7 +841,7 @@ class Pytanque:
         PetanqueError
             If state is invalid.
 
-        Example
+        Examples
         --------
         >>> with Pytanque("127.0.0.1", 8765) as client:
         ...     state = client.start("./examples/foo.v", "addnC")
@@ -874,7 +874,7 @@ class Pytanque:
         ValueError
             If file path is invalid.
 
-        Example
+        Examples
         --------
         >>> with Pytanque("127.0.0.1", 8765) as client:
         ...     toc = client.toc("./examples/foo.v")
@@ -907,7 +907,7 @@ class Pytanque:
         exc_tb : Optional[TracebackType]
             Exception traceback if an exception occurred.
 
-        Example
+        Examples
         --------
         >>> with Pytanque("127.0.0.1", 8765) as client:
         ...     # Connection is automatically managed
