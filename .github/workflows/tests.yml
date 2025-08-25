@@ -75,7 +75,7 @@ jobs:
         run: poetry add --group dev pytest pytest-cov
       
       - name: Setup OCaml
-        uses: ocaml/setup-ocaml@v2
+        uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: 5.2.x
           opam-repositories: |
