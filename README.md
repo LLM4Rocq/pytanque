@@ -2,6 +2,7 @@
 
 [![Documentation](https://img.shields.io/badge/docs-latest-blue.svg)](https://llm4rocq.github.io/pytanque)
 [![Build Status](https://github.com/llm4rocq/pytanque/actions/workflows/docs.yml/badge.svg?branch=main)](https://github.com/llm4rocq/pytanque/actions/workflows/docs.yml)
+[![Tests](https://github.com/llm4rocq/pytanque/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/llm4rocq/pytanque/actions/workflows/tests.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/llm4rocq/pytanque/blob/main/LICENSE)
 
