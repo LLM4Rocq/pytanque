@@ -233,7 +233,7 @@ class TestTocMethod:
 
             print("Available definitions:")
             for name, definition in toc:
-                print(f"  {name}: {definition[0]["detail"]}")
+                print(f"  {name}: {definition[0]['detail']}")
 
 
 class TestPetanqueErrorHandling:
