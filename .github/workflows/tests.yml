@@ -2,9 +2,10 @@ name: Tests
 
 on:
   push:
-    branches: [main]
+    branches: [main, github-tests]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   setup-ocaml:
