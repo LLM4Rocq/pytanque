@@ -3,6 +3,7 @@ import json
 import os
 import pathlib
 import logging
+import subprocess
 from typing import (
     Tuple,
     Union,
@@ -141,7 +142,7 @@ def pp_goal(g: Goal) -> str:
 
 class Pytanque:
     """
-    Petanque client to communicate with the Rocq theorem prover using JSON-RPC over a simple socket.
+    Petanque client to communicate with the Rocq theorem prover using JSON-RPC over a socket or subprocess.
 
     The Pytanque class provides a high-level interface for interactive theorem proving
     with Rocq/Coq through the Petanque server. It supports context manager protocol
@@ -156,104 +157,210 @@ class Pytanque:
 
     Parameters
     ----------
-    host : str
-        The hostname or IP address of the Petanque server.
-    port : int
-        The port number of the Petanque server.
+    host : str, optional
+        The hostname or IP address of the Petanque server (for socket mode).
+    port : int, optional
+        The port number of the Petanque server (for socket mode).
+    use_subprocess : bool, optional
+        Whether to use subprocess mode with "pet" command, by default False.
 
     Attributes
     ----------
     host : str
-        Server hostname.
+        Server hostname (socket mode only).
     port : int
-        Server port number.
+        Server port number (socket mode only).
     id : int
         Current request ID for JSON-RPC.
     socket : socket.socket
-        TCP socket for server communication.
+        TCP socket for server communication (socket mode only).
+    process : subprocess.Popen
+        Subprocess handle (subprocess mode only).
+    mode : str
+        Communication mode: "socket" or "subprocess".
 
     Examples
     --------
+    Socket mode:
     >>> from pytanque import Pytanque
     >>> with Pytanque("127.0.0.1", 8765) as client:
-    ...     # Start a proof
     ...     state = client.start("./examples/foo.v", "addnC")
-    ...
-    ...     # Execute commands and check feedback
-    ...     state = client.run(state, "induction n.", verbose=True)
-    ...     for level, msg in state.feedback:
-    ...         print(f"Rocq message: {msg}")
-    ...
-    ...     # Get AST of a command
-    ...     ast = client.ast(state, "auto")
-    ...     print("AST:", ast)
-    ...
-    ...     # Get state at specific position in file
-    ...     pos_state = client.get_state_at_pos("./examples/foo.v", line=3, character=0)
-    ...     print(f"State at position: {pos_state.st}")
+
+    Stdio mode:
+    >>> with Pytanque(stdio=True) as client:
+    ...     state = client.start("./examples/foo.v", "addnC")
     """
 
-    def __init__(self, host: str, port: int):
+    def __init__(
+        self,
+        host: Optional[str] = None,
+        port: Optional[int] = None,
+        stdio: bool = False,
+    ):
         """
         Initialize a new Pytanque client instance.
 
         Parameters
         ----------
-        host : str
-            The hostname or IP address of the Petanque server.
-        port : int
-            The port number of the Petanque server.
+        host : str, optional
+            The hostname or IP address of the Petanque server (for socket mode).
+        port : int, optional
+            The port number of the Petanque server (for socket mode).
+        stdio : bool, optional
+            Whether to use stdio mode with "pet" command, by default False.
 
         Examples
         --------
+        Socket mode:
         >>> client = Pytanque("127.0.0.1", 8765)
         >>> client.connect()
+
+        Stdio mode:
+        >>> client = Pytanque(stdio=True)
+        >>> client.connect()
         """
-        self.host = host
-        self.port = port
+        if stdio:
+            self.mode = "stdio"
+            self.process = None
+            self.host = None
+            self.port = None
+            self.socket = None
+        elif host is not None and port is not None:
+            self.mode = "socket"
+            self.host = host
+            self.port = port
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.process = None
+        else:
+            raise ValueError(
+                "Must specify either (host, port) for socket mode or stdio=True for stdio mode"
+            )
+
         self.id = 0
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     def connect(self) -> None:
         """
-        Establish connection to the Petanque server.
+        Establish connection to the Petanque server or spawn subprocess.
 
         Raises
         ------
         ConnectionError
-            If connection to the server fails.
+            If connection to the server fails (socket mode).
         OSError
-            If socket creation fails.
+            If socket creation fails or subprocess spawning fails.
 
         Examples
         --------
+        Socket mode:
         >>> client = Pytanque("127.0.0.1", 8765)
         >>> client.connect()
         >>> client.close()
+
+        Stdio mode:
+        >>> client = Pytanque(stdio=True)
+        >>> client.connect()
+        >>> client.close()
         """
-        self.socket.connect((self.host, self.port))
-        logger.info(f"Connected to the socket")
+        if self.mode == "socket":
+            self.socket.connect((self.host, self.port))
+            logger.info(f"Connected to the socket")
+        elif self.mode == "stdio":
+            self.process = subprocess.Popen(
+                ["pet"],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            logger.info(f"Spawned pet subprocess")
 
     def close(self) -> None:
         """
-        Close the connection to the Petanque server.
+        Close the connection to the Petanque server or terminate subprocess.
 
         Examples
         --------
+        Socket mode:
         >>> client = Pytanque("127.0.0.1", 8765)
         >>> client.connect()
         >>> client.close()
+
+        Stdio mode:
+        >>> client = Pytanque(stdio=True)
+        >>> client.connect()
+        >>> client.close()
         """
-        self.socket.close()
-        logger.info(f"Socket closed")
+        if self.mode == "socket":
+            self.socket.close()
+            logger.info(f"Socket closed")
+        elif self.mode == "stdio":
+            if self.process:
+                self.process.terminate()
+                try:
+                    self.process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    self.process.kill()
+                    self.process.wait()
+                logger.info(f"Pet subprocess terminated")
 
     def __enter__(self) -> Self:
         self.connect()
         return self
 
+    def _read_socket_response(self, size: int) -> str:
+        fragments = []
+        while True:
+            chunk = self.socket.recv(size)
+            f = chunk.decode(errors="ignore")
+            fragments.append(f)
+            if f.endswith("\n"):
+                break
+        return "".join(fragments)
+
+    def _send_lsp_message(self, json_payload: str) -> None:
+        """Send a JSON-RPC message using LSP format (Content-Length header + JSON)."""
+        content_length = len(json_payload.encode("utf-8"))
+        lsp_message = f"Content-Length: {content_length}\r\n\r\n{json_payload}"
+
+        logger.info(f"Sending LSP message: {json_payload.strip()}")
+        self.process.stdin.write(lsp_message)
+        self.process.stdin.flush()
+
+    def _read_lsp_response(self) -> str:
+        """Read a JSON-RPC response using LSP format, skipping notifications."""
+        while True:
+            # Read Content-Length header
+            header_line = self.process.stdout.readline()
+            if not header_line:
+                raise PetanqueError(-32603, "No response from pet process")
+
+            if not header_line.startswith("Content-Length:"):
+                continue  # Skip other headers or empty lines
+
+            # Parse content length and read JSON content
+            content_length = int(header_line.split(":")[1].strip())
+            self.process.stdout.readline()  # Skip empty line separator
+            json_content = self.process.stdout.read(content_length)
+
+            logger.info(f"Received LSP message: {json_content.strip()}")
+
+            try:
+                response_data = json.loads(json_content)
+            except json.JSONDecodeError as e:
+                raise PetanqueError(
+                    -32700, f"Invalid JSON response: {json_content}"
+                ) from e
+
+            # Skip notifications (messages without matching request id)
+            if "id" not in response_data:
+                logger.info(f"Skipping notification: {response_data}")
+                continue
+
+            return json_content
+
     def query(self, params: Params, size: int = 4096) -> Response:
         """
-        Send a low-level JSON-RPC query to the server.
+        Send a low-level JSON-RPC query to the server or subprocess.
 
         This is an internal method used by other high-level methods.
         Users should typically use the specific methods like start(), run_tac(), etc.
@@ -263,7 +370,7 @@ class Pytanque:
         params : Params
             JSON-RPC parameters (one of StartParams, RunParams, GoalsParams, etc.).
         size : int, optional
-            Buffer size for receiving response, by default 4096.
+            Buffer size for receiving response, by default 4096 (socket mode only).
 
         Returns
         -------
@@ -288,17 +395,16 @@ class Pytanque:
         """
         self.id += 1
         request = mk_request(self.id, params)
-        payload = (json.dumps(request.to_json()) + "\n").encode()
+        payload = json.dumps(request.to_json()) + "\n"
         logger.info(f"Query Payload: {payload}")
-        self.socket.sendall(payload)
-        fragments = []
-        while True:
-            chunk = self.socket.recv(size)
-            f = chunk.decode(errors="ignore")
-            fragments.append(f)
-            if f.endswith("\n"):
-                break
-        raw = "".join(fragments)
+
+        if self.mode == "socket":
+            self.socket.sendall(payload.encode())
+            raw = self._read_socket_response(size)
+        elif self.mode == "stdio":
+            self._send_lsp_message(payload)
+            raw = self._read_lsp_response()
+
         try:
             logger.info(f"Query Response: {raw}")
             resp = Response.from_json_string(raw)
