@@ -16,6 +16,7 @@ Pytanque is a Python API for lightweight communication with the [Rocq](https://r
 
 ### Key Features
 
+- **Two communication modes**: Socket mode (via `pet-server`) for multi-client usage or stdio mode (via `pet`) for single-client simplicity
 - **Interactive theorem proving**: Execute tactics and commands step by step
 - **Comprehensive feedback**: Access all Rocq messages (errors, warnings, search results)
 - **AST parsing**: Get abstract syntax trees for commands and file positions
@@ -56,7 +57,11 @@ pip install -e .
 
 ## Quick Start
 
-### 1. Start the Petanque Server
+Pytanque supports two communication modes with the Petanque backend:
+
+### Socket Mode (via pet-server)
+
+#### 1. Start the Petanque Server
 
 ```bash
 $ pet-server  # Default port: 8765
@@ -64,7 +69,7 @@ $ pet-server  # Default port: 8765
 $ pet-server -p 9000
 ```
 
-### 2. Basic Usage
+#### 2. Connect via Socket
 
 ```python
 from pytanque import Pytanque
@@ -83,13 +88,37 @@ with Pytanque("127.0.0.1", 8765) as client:
     print(f"Current goals: {len(goals)}")
 ```
 
-You can quickly try a similar example with:
+
+You can quickly try this example with:
 
 ```bash
+# Socket mode example
 python examples/foo.py
 ```
 
 See also the notebook `examples/getting_started.ipynb` for more examples.
+
+### Stdio Mode (via pet)
+
+For direct communication without a server, use subprocess mode:
+
+```python
+from pytanque import Pytanque
+
+with Pytanque(stdio=True) as client:
+    # Same API as socket mode
+    state = client.start("./examples/foo.v", "addnC")
+    print(f"Initial state: {state.st}, finished: {state.proof_finished}")
+    
+    # Execute tactics step by step
+    state = client.run(state, "induction n.", verbose=True)
+    state = client.run(state, "auto.", verbose=True)
+    
+    # Check current goals
+    goals = client.goals(state)
+    print(f"Current goals: {len(goals)}")
+```
+
 
 ## API Overview
 
@@ -122,12 +151,20 @@ for level, message in state.feedback:
 
 ## Testing
 
-
-You can launch all the tests with pytest.
+You can launch all the tests with pytest. The test suite includes tests for both communication modes:
 
 ```bash
+# Run all tests (socket + subprocess modes)
 pytest -v .
+
+# Run only socket mode tests
+pytest tests/test_unit.py tests/test_integration.py -v
+
+# Run only stdio mode tests  
+pytest tests/test_stdio.py -v
 ```
+
+**Note:** Socket mode tests require `pet-server` to be running. Subprocess mode tests require the `pet` command to be available in PATH.
 
 ## Documentation
 
@@ -163,35 +200,32 @@ To add a new method:
 2. Run `atdpy protocol.atd` to generate `protocol.py`
 3. Update `client.py` with the new method
 
-### Project Structure
-
-```
-pytanque/
-├── client.py          # Main Pytanque client class
-├── protocol.py        # Auto-generated protocol definitions
-├── __init__.py        # Package exports
-tests/
-├── conftest.py        # Shared test fixtures
-├── test_unit.py       # Unit tests for individual methods
-├── test_integration.py # Integration and workflow tests
-examples/
-├── foo.py            # Basic usage example
-├── getting_started.ipynb # Jupyter notebook tutorial
-└── foo.v             # Example Coq/Rocq file
-```
 
 ## Troubleshooting
 
 ### Common Issues
 
-**Server Connection Errors**
+**Socket Mode Connection Errors**
 - Ensure `pet-server` is running: `pet-server -p 8765`
-- Verify port availability
+- Verify port availability and network connectivity
+- Check firewall settings if connecting remotely
+
+**Subprocess Mode Errors**
+- Ensure `pet` command is available in PATH: `which pet`
+- Verify coq-lsp installation includes the `pet` binary
+- Check that the `pet` process can access your Rocq/Coq files
 
 **File Path Issues**
 - Use absolute paths or ensure working directory is correct
 - Check file exists and has proper Coq/Rocq syntax
+- Ensure workspace is set correctly with `client.set_workspace()`
 
 **Installation Issues**
-- Ensure coq-lsp is properly installed
-- Install `lwt` and `logs` before `coq-lsp` (required for `pet-server`)
+- Ensure coq-lsp is properly installed with both `pet` and `pet-server`
+- Install `lwt` and `logs` before `coq-lsp` (required for both modes)
+- Verify installation: `pet --version` and `pet-server --version`
+
+**Performance Considerations**
+- Socket mode: Better for multiple clients or long-running sessions
+- Subprocess mode: Better for single-client usage or automation
+- Choose the appropriate mode based on your use case
