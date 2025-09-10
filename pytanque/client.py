@@ -270,7 +270,7 @@ class Pytanque:
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                text=True,
+                text=False,
             )
             logger.info(f"Spawned pet subprocess")
 
@@ -323,14 +323,14 @@ class Pytanque:
         lsp_message = f"Content-Length: {content_length}\r\n\r\n{json_payload}"
 
         logger.info(f"Sending LSP message: {json_payload.strip()}")
-        self.process.stdin.write(lsp_message)
+        self.process.stdin.write(lsp_message.encode('utf-8'))
         self.process.stdin.flush()
 
     def _read_lsp_response(self) -> str:
         """Read a JSON-RPC response using LSP format, skipping notifications."""
         while True:
             # Read Content-Length header
-            header_line = self.process.stdout.readline()
+            header_line = self.process.stdout.readline().decode('utf-8')
             if not header_line:
                 raise PetanqueError(-32603, "No response from pet process")
 
@@ -340,8 +340,10 @@ class Pytanque:
             # Parse content length and read JSON content
             content_length = int(header_line.split(":")[1].strip())
             self.process.stdout.readline()  # Skip empty line separator
-            json_content = self.process.stdout.read(content_length)
-
+            
+            # Read exact number of bytes and decode to UTF-8
+            json_bytes = self.process.stdout.read(content_length)
+            json_content = json_bytes.decode('utf-8')
             logger.info(f"Received LSP message: {json_content.strip()}")
 
             try:
