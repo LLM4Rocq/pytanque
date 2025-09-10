@@ -27,10 +27,10 @@ jobs:
           path: |
             ~/.opam
             ~/.cache/opam
-          key: ocaml-deps-${{ runner.os }}-5.2.x-rocq-v1
+            _opam
+          key: ocaml-deps-${{ runner.os }}-5.2.x-coq-lsp-v1
           restore-keys: |
-            ocaml-deps-${{ runner.os }}-5.2.x-rocq-
-            ocaml-deps-${{ runner.os }}-5.2.x-
+            ocaml-deps-${{ runner.os }}-5.2.x-coq-lsp-v1
       
       - name: Install Rocq and coq-lsp dependencies
         if: steps.cache-ocaml.outputs.cache-hit != 'true'
@@ -81,11 +81,12 @@ jobs:
           path: |
             ~/.opam
             ~/.cache/opam
-          key: ocaml-deps-${{ runner.os }}-5.2.x-coq820-v1
+            _opam
+          key: ocaml-deps-${{ runner.os }}-5.2.x-coq-lsp-v1
           restore-keys: |
-            ocaml-deps-${{ runner.os }}-5.2.x-coq820-
-            ocaml-deps-${{ runner.os }}-5.2.x-
+            ocaml-deps-${{ runner.os }}-5.2.x-coq-lsp-v1
       
       - name: Run tests
         run: |
+          eval $(opam env)
           uv run pytest -v
