@@ -31,7 +31,7 @@ First, install coq-lsp with the required dependencies:
 
 ```bash
 # Install dependencies
-opam install lwt logs coq.8.20.0
+opam install lwt logs coq-lsp
 
 # Pin the correct version of coq-lsp
 opam pin add coq-lsp https://github.com/ejgallego/coq-lsp.git#v8.20

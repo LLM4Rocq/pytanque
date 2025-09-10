@@ -2,7 +2,7 @@ name: Tests
 
 on:
   push:
-    branches: [main]
+    branches: [main, rocq]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -27,16 +27,15 @@ jobs:
           path: |
             ~/.opam
             ~/.cache/opam
-          key: ocaml-deps-${{ runner.os }}-5.2.x-coq820-v1
+          key: ocaml-deps-${{ runner.os }}-5.2.x-rocq-v1
           restore-keys: |
-            ocaml-deps-${{ runner.os }}-5.2.x-coq820-
+            ocaml-deps-${{ runner.os }}-5.2.x-rocq-
             ocaml-deps-${{ runner.os }}-5.2.x-
       
       - name: Install Rocq and coq-lsp dependencies
         if: steps.cache-ocaml.outputs.cache-hit != 'true'
         run: |
-          opam install -y lwt logs coq.8.20.0
-          opam pin add -y coq-lsp https://github.com/ejgallego/coq-lsp.git#v8.20
+          opam install -y lwt logs coq-lsp
 
   test:
     needs: setup-ocaml
