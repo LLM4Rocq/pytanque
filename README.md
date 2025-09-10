@@ -39,20 +39,17 @@ opam pin add coq-lsp https://github.com/ejgallego/coq-lsp.git#v8.20
 
 ### Install Pytanque
 
-We recommend using a virtual environment. With `uv`:
+We recommend using `uv` for package management:
 
 ```bash
-uv venv
+# Install and sync dependencies
+uv sync
+
+# Install in editable mode
 uv pip install -e .
-source .venv/bin/activate
-```
 
-Or with standard Python:
-
-```bash
-python -m venv .venv
+# Activate the environment
 source .venv/bin/activate
-pip install -e .
 ```
 
 ## Quick Start
@@ -151,17 +148,23 @@ for level, message in state.feedback:
 
 ## Testing
 
+First install dev dependencies for testing:
+
+```bash
+uv sync --dev
+```
+
 You can launch all the tests with pytest. The test suite includes tests for both communication modes:
 
 ```bash
 # Run all tests (socket + subprocess modes)
-pytest -v .
+uv run pytest -v .
 
 # Run only socket mode tests
-pytest tests/test_unit.py tests/test_integration.py -v
+uv run pytest tests/test_unit.py tests/test_integration.py -v
 
 # Run only stdio mode tests  
-pytest tests/test_stdio.py -v
+uv run pytest tests/test_stdio.py -v
 ```
 
 **Note:** Socket mode tests require `pet-server` to be running. Subprocess mode tests require the `pet` command to be available in PATH.
@@ -176,11 +179,11 @@ To build the documentation locally:
 
 ```bash
 # Install documentation dependencies
-poetry install --with docs
+uv sync --extra docs
 
 # Build the documentation
 cd docs
-poetry run sphinx-build -b html . _build/html
+uv run sphinx-build -b html . _build/html
 
 # Open the documentation
 open _build/html/index.html  # macOS

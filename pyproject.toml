@@ -1,26 +1,30 @@
-[tool.poetry]
+[project]
 name = "pytanque"
 version = "0.2.0"
 description = ""
 authors = [
-    "Guillaume Baudart <guillaume.baudart@inria.fr>",
-    "Emilio J. Gallego Arias <emilio-jesus.gallego-arias@inria.fr>",
-    "Laetitia Teodorescu <laetitia.teodorescu@inria.fr>"
+    {name = "Guillaume Baudart", email = "guillaume.baudart@inria.fr"},
+    {name = "Emilio J. Gallego Arias", email = "emilio-jesus.gallego-arias@inria.fr"},
+    {name = "Laetitia Teodorescu", email = "laetitia.teodorescu@inria.fr"}
 ]
 readme = "README.md"
-license = "Apache-2.0"
+license = {text = "Apache-2.0"}
+requires-python = ">=3.10"
+dependencies = [
+    "typing-extensions>=4.15.0",
+]
 
-[tool.poetry.dependencies]
-python = "^3.10"
+[project.optional-dependencies]
+docs = [
+    "sphinx>=6.0.0",
+    "furo>=2024.1.29",
+    "myst-parser[linkify]>=2.0.0",
+    "sphinx-autodoc-typehints>=1.0.0",
+    "numpydoc>=1.5.0"
+]
 
-[tool.poetry.group.docs.dependencies]
-sphinx = "^6.0.0"
-furo = "^2024.1.29"
-myst-parser = {extras = ["linkify"], version = "^2.0.0"}
-sphinx-autodoc-typehints = "^1.0.0"
-numpydoc = "^1.5.0"
-
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[tool.uv]
+package = true
+dev-dependencies = [
+    "pytest>=8.4.2",
+]
