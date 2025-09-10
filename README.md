@@ -39,18 +39,22 @@ opam pin add coq-lsp https://github.com/ejgallego/coq-lsp.git#v8.20
 
 ### Install Pytanque
 
-We recommend using `uv` for package management:
+We recommend using `uv` for package management.
+
+### Install from GitHub (Recommended)
 
 ```bash
-# Install and sync dependencies
-uv sync
-
-# Install in editable mode
-uv pip install -e .
-
-# Activate the environment
-source .venv/bin/activate
+uv pip install git+https://github.com/llm4rocq/pytanque.git
 ```
+
+### Development Installation
+
+1. Clone this repository
+2. Use the project workflow:
+   ```bash
+   cd pytanque
+   uv sync
+   ```
 
 ## Quick Start
 
@@ -186,9 +190,7 @@ cd docs
 uv run sphinx-build -b html . _build/html
 
 # Open the documentation
-open _build/html/index.html  # macOS
-# or
-xdg-open _build/html/index.html  # Linux
+open _build/html/index.html
 ```
 
 ## Development
