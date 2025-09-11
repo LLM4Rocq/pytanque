@@ -12,7 +12,7 @@ Pytanque is a Python API for lightweight communication with the [Rocq](https://r
 
 - **Pytanque** is a lightweight Python client for Petanque
 - **Petanque** is part of coq-lsp and provides a machine-to-machine protocol based on JSON-RPC to communicate with the Rocq prover.
-- **pet-server** is the command that starts a Petanque server which can interpret requests for the Rocq prover 
+- **pet-server/pet** are the commands that start a Petanque server which can interpret requests for the Rocq prover 
 
 ### Key Features
 
@@ -33,22 +33,22 @@ First, install coq-lsp with the required dependencies:
 # Install dependencies
 opam install lwt logs coq-lsp
 
-# Pin the correct version of coq-lsp
+# Or install one of the dev versions of coq-lsp, e.g., for Coq.8.20
+opam install lwt logs coq.8.20.0
 opam pin add coq-lsp https://github.com/ejgallego/coq-lsp.git#v8.20
 ```
 
 ### Install Pytanque
 
-We recommend using `uv` for package management.
-
 ### Install from GitHub (Recommended)
 
 ```bash
-uv pip install git+https://github.com/llm4rocq/pytanque.git
+pip install git+https://github.com/llm4rocq/pytanque.git
 ```
 
 ### Development Installation
 
+We recommend using uv.
 1. Clone this repository
 2. Use the project workflow:
    ```bash
