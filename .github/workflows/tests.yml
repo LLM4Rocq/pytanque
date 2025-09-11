@@ -97,7 +97,14 @@ jobs:
             ocaml-deps-${{ runner.os }}-5.2.x-${{ matrix.coq-lsp-version }}-v1
       
       
-      - name: Run tests
+      - name: Run tests (stable version - skip AST/position tests)
+        if: matrix.coq-lsp-version == 'stable'
+        run: |
+          eval $(opam env)
+          uv run pytest -v -k "not (ast or at_pos)"
+      
+      - name: Run tests (dev version - all tests)
+        if: matrix.coq-lsp-version == 'dev'
         run: |
           eval $(opam env)
           uv run pytest -v
