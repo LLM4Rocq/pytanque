@@ -10,6 +10,9 @@ on:
 jobs:
   setup-ocaml:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        coq-lsp-version: ['stable', 'dev']
     steps:
       - uses: actions/checkout@v4
       
@@ -28,21 +31,28 @@ jobs:
             ~/.opam
             ~/.cache/opam
             _opam
-          key: ocaml-deps-${{ runner.os }}-5.2.x-coq-lsp-v1
+          key: ocaml-deps-${{ runner.os }}-5.2.x-${{ matrix.coq-lsp-version }}-v1
           restore-keys: |
-            ocaml-deps-${{ runner.os }}-5.2.x-coq-lsp-v1
+            ocaml-deps-${{ runner.os }}-5.2.x-${{ matrix.coq-lsp-version }}-v1
       
-      - name: Install Rocq and coq-lsp dependencies
-        if: steps.cache-ocaml.outputs.cache-hit != 'true'
+      - name: Install coq-lsp stable version
+        if: steps.cache-ocaml.outputs.cache-hit != 'true' && matrix.coq-lsp-version == 'stable'
         run: |
           opam install -y lwt logs coq-lsp
+      
+      - name: Install coq-lsp dev version
+        if: steps.cache-ocaml.outputs.cache-hit != 'true' && matrix.coq-lsp-version == 'dev'
+        run: |
+          opam install -y lwt logs coq.8.20.0
+          opam pin add -y coq-lsp https://github.com/ejgallego/coq-lsp.git#v8.20
 
   test:
     needs: setup-ocaml
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.10', '3.12']
+        python-version: ['3.12']
+        coq-lsp-version: ['stable', 'dev']
 
     steps:
       - uses: actions/checkout@v4
@@ -62,7 +72,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .venv
-          key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/uv.lock') }}
+          key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.coq-lsp-version }}-${{ hashFiles('**/uv.lock') }}
       
       - name: Install dependencies
         if: steps.cached-uv-dependencies.outputs.cache-hit != 'true'
@@ -82,9 +92,10 @@ jobs:
             ~/.opam
             ~/.cache/opam
             _opam
-          key: ocaml-deps-${{ runner.os }}-5.2.x-coq-lsp-v1
+          key: ocaml-deps-${{ runner.os }}-5.2.x-${{ matrix.coq-lsp-version }}-v1
           restore-keys: |
-            ocaml-deps-${{ runner.os }}-5.2.x-coq-lsp-v1
+            ocaml-deps-${{ runner.os }}-5.2.x-${{ matrix.coq-lsp-version }}-v1
+      
       
       - name: Run tests
         run: |
