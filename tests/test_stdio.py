@@ -90,7 +90,7 @@ class TestStdioMode:
             assert state.st is not None
             print(f"After induction, state: {state.st}")
 
-    def test_stdio_state_operations(self, check_pet_available, example_files):
+    def test_stdio_state_at_pos_operations(self, check_pet_available, example_files):
         """Test state-related operations in stdio mode."""
         with Pytanque(stdio=True) as client:
             client.set_workspace(debug=False, dir="./examples/")

@@ -7,7 +7,7 @@ These tests focus on testing complete workflows and cross-method integration.
 import pytest
 import logging
 
-from pytanque import Pytanque, PetanqueError
+from pytanque import Pytanque, PetanqueError, InspectPhysical, InspectGoals
 
 
 class TestFeedbackIntegration:
@@ -75,10 +75,11 @@ class TestIntegratedWorkflow:
                 print(f"Available premises: {len(premises)}")
 
                 # Skip state comparison due to serialization issues
-                # state2 = client.run(state, "simpl.")
-                # equal = client.state_equal(state, state2, inspectPhysical)
-                # print(f"States equal: {equal}")
-                print("State comparison skipped due to serialization issues")
+                state2 = client.run(state, "simpl.")
+                state3 = client.run(state2, "idtac.")
+                p_equal = client.state_equal(state2, state3, InspectPhysical)
+                g_equal = client.state_equal(state2, state3, InspectGoals)
+                print(f"States equal: Physical: {p_equal}, Goals: {g_equal}")
 
                 # Get state hash
                 hash_val = client.state_hash(state)
@@ -90,7 +91,8 @@ class TestIntegratedWorkflow:
                 assert isinstance(goals, list)
                 assert isinstance(state.proof_finished, bool)
                 assert isinstance(premises, list)
-                # assert isinstance(equal, bool)  # Skipped due to serialization issues
+                assert (p_equal == False)
+                assert (g_equal == True)
                 assert isinstance(hash_val, int)
 
         except PetanqueError as e:
