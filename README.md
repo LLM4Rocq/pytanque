@@ -19,9 +19,9 @@ Pytanque is a Python API for lightweight communication with the [Rocq](https://r
 - **Two communication modes**: Socket mode (via `pet-server`) for multi-client usage or stdio mode (via `pet`) for single-client simplicity
 - **Interactive theorem proving**: Execute tactics and commands step by step
 - **Comprehensive feedback**: Access all Rocq messages (errors, warnings, search results)
-- **AST parsing**: Get abstract syntax trees for commands and file positions
 - **State management**: Navigate proof states and compare them
-- **Position-based queries**: Get states at specific file positions
+- **AST parsing**: Get abstract syntax trees for commands and file positions _(only with the dev version of coq-lsp)_
+- **Position-based queries**: Get states at specific file positions _(only with the dev version of coq-lsp)_
 
 ## Installation
 
@@ -132,13 +132,13 @@ with Pytanque(stdio=True) as client:
 
 ### Advanced Features
 
-- **`ast(state, text)`**: Parse command to AST
-- **`ast_at_pos(file, line, char)`**: Get AST at file position
-- **`get_state_at_pos(file, line, char)`**: Get proof state at position
 - **`get_root_state(file)`**: Get initial document state
 - **`state_equal(st1, st2, kind)`**: Compare proof states
 - **`state_hash(state)`**: Get state hash
 - **`toc(file)`**: Get table of contents
+- **`ast(state, text)`**: Parse command to AST _(only with the dev version of coq-lsp)_
+- **`ast_at_pos(file, line, char)`**: Get AST at file position _(only with the dev version of coq-lsp)_
+- **`get_state_at_pos(file, line, char)`**: Get proof state at position _(only with the dev version of coq-lsp)_
 
 ### Working with Feedback
 
