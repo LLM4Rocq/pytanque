@@ -91,8 +91,8 @@ class TestIntegratedWorkflow:
                 assert isinstance(goals, list)
                 assert isinstance(state.proof_finished, bool)
                 assert isinstance(premises, list)
-                assert (p_equal == False)
-                assert (g_equal == True)
+                assert p_equal == False
+                assert g_equal == True
                 assert isinstance(hash_val, int)
 
         except PetanqueError as e:
@@ -149,6 +149,51 @@ class TestIntegratedWorkflow:
             assert isinstance(ast, dict)
             assert isinstance(file_ast, dict)
             assert isinstance(search_state.feedback, list)
+
+
+class TestNotationListing:
+    """Test notation listing functionality."""
+
+    def test_list_notations_basic(self, server_config, example_files, petanque_server):
+        """Test listing notations in a simple arithmetic statement (proposition)."""
+        with Pytanque("127.0.0.1", 8765) as client:
+            state = client.get_root_state("./examples/foo.v")
+
+            # Test with basic arithmetic notation in a proposition
+            notations = client.list_notations_in_statement(
+                state, "Lemma foo n m : n + m = m + n."
+            )
+            print(f"Notations in 'n + m = m + n': {notations}")
+            # Should find at least the + and = notations
+            assert any(item.notation == "_ + _" for item in notations)
+
+    def test_list_notations_complex(
+        self, server_config, example_files, petanque_server
+    ):
+        """Test listing notations in a complex statement with multiple operators."""
+        with Pytanque("127.0.0.1", 8765) as client:
+            state = client.start("./examples/foo.v", "addnC")
+
+            # Test with multiple notations in a proposition
+            notations = client.list_notations_in_statement(
+                state, "Lemma foo n m : n + m * 2 = 2 * m + n."
+            )
+            print(f"Notations in complex statement: {notations}")
+
+            # Should find +, *, and = notations
+            assert any(item.notation == "_ + _" for item in notations)
+            assert any(item.notation == "_ * _" for item in notations)
+
+    def test_list_notations_fails_on_command(
+        self, server_config, example_files, petanque_server
+    ):
+        """Test that list_notations_in_statement fails on other commands."""
+        with Pytanque("127.0.0.1", 8765) as client:
+            state = client.start("./examples/foo.v", "addnC")
+
+            # This should fail because "Check" is a command, not a statement
+            with pytest.raises(PetanqueError):
+                client.list_notations_in_statement(state, "Goal (n + m).")
 
 
 if __name__ == "__main__":

@@ -943,30 +943,130 @@ class Position:
 
 
 @dataclass
-class ListNotationsInStatementParams:
-    """Original type: list_notations_in_statement_params = { ... }"""
+class NotationInfo:
+    """Original type: notation_info = { ... }"""
+
+    locations: List[Any]
+    path: str
+    secpath: str
+    notation: str
+    scope: str
+
+    @classmethod
+    def from_json(cls, x: Any) -> "NotationInfo":
+        if isinstance(x, dict):
+            return cls(
+                locations=(
+                    _atd_read_list((lambda x: x))(x["locations"])
+                    if "locations" in x
+                    else _atd_missing_json_field("NotationInfo", "locations")
+                ),
+                path=(
+                    _atd_read_string(x["path"])
+                    if "path" in x
+                    else _atd_missing_json_field("NotationInfo", "path")
+                ),
+                secpath=(
+                    _atd_read_string(x["secpath"])
+                    if "secpath" in x
+                    else _atd_missing_json_field("NotationInfo", "secpath")
+                ),
+                notation=(
+                    _atd_read_string(x["notation"])
+                    if "notation" in x
+                    else _atd_missing_json_field("NotationInfo", "notation")
+                ),
+                scope=(
+                    _atd_read_string(x["scope"])
+                    if "scope" in x
+                    else _atd_missing_json_field("NotationInfo", "scope")
+                ),
+            )
+        else:
+            _atd_bad_json("NotationInfo", x)
+
+    def to_json(self) -> Any:
+        res: Dict[str, Any] = {}
+        res["locations"] = _atd_write_list((lambda x: x))(self.locations)
+        res["path"] = _atd_write_string(self.path)
+        res["secpath"] = _atd_write_string(self.secpath)
+        res["notation"] = _atd_write_string(self.notation)
+        res["scope"] = _atd_write_string(self.scope)
+        return res
+
+    @classmethod
+    def from_json_string(cls, x: str) -> "NotationInfo":
+        return cls.from_json(json.loads(x))
+
+    def to_json_string(self, **kw: Any) -> str:
+        return json.dumps(self.to_json(), **kw)
+
+
+@dataclass
+class ListNotationsResponse:
+    """Original type: list_notations_response = { ... }"""
+
+    st: List[NotationInfo]
+
+    @classmethod
+    def from_json(cls, x: Any) -> "ListNotationsResponse":
+        if isinstance(x, dict):
+            return cls(
+                st=(
+                    _atd_read_list(NotationInfo.from_json)(x["st"])
+                    if "st" in x
+                    else _atd_missing_json_field("ListNotationsResponse", "st")
+                ),
+            )
+        else:
+            _atd_bad_json("ListNotationsResponse", x)
+
+    def to_json(self) -> Any:
+        res: Dict[str, Any] = {}
+        res["st"] = _atd_write_list((lambda x: x.to_json()))(self.st)
+        return res
+
+    @classmethod
+    def from_json_string(cls, x: str) -> "ListNotationsResponse":
+        return cls.from_json(json.loads(x))
+
+    def to_json_string(self, **kw: Any) -> str:
+        return json.dumps(self.to_json(), **kw)
+
+
+@dataclass
+class ListNotationsParams:
+    """Original type: list_notations_params = { ... }"""
 
     st: int
     statement: str
 
     @classmethod
-    def from_json(cls, x: Any) -> 'ListNotationsInStatementParams':
+    def from_json(cls, x: Any) -> "ListNotationsParams":
         if isinstance(x, dict):
             return cls(
-                st=_atd_read_int(x['st']) if 'st' in x else _atd_missing_json_field('ListNotationsInStatementParams', 'st'),
-                statement=_atd_read_string(x['statement']) if 'statement' in x else _atd_missing_json_field('ListNotationsInStatementParams', 'statement'),
+                st=(
+                    _atd_read_int(x["st"])
+                    if "st" in x
+                    else _atd_missing_json_field("ListNotationsParams", "st")
+                ),
+                statement=(
+                    _atd_read_string(x["statement"])
+                    if "statement" in x
+                    else _atd_missing_json_field("ListNotationsParams", "statement")
+                ),
             )
         else:
-            _atd_bad_json('ListNotationsInStatementParams', x)
+            _atd_bad_json("ListNotationsParams", x)
 
     def to_json(self) -> Any:
         res: Dict[str, Any] = {}
-        res['st'] = _atd_write_int(self.st)
-        res['statement'] = _atd_write_string(self.statement)
+        res["st"] = _atd_write_int(self.st)
+        res["statement"] = _atd_write_string(self.statement)
         return res
 
     @classmethod
-    def from_json_string(cls, x: str) -> 'ListNotationsInStatementParams':
+    def from_json_string(cls, x: str) -> "ListNotationsParams":
         return cls.from_json(json.loads(x))
 
     def to_json_string(self, **kw: Any) -> str:

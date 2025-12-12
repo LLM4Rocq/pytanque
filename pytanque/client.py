@@ -18,11 +18,6 @@ from .protocol import (
     Response,
     Failure,
     Position,
-    ListNotationsInStatementParams,
-    AstParams,
-    AstAtPosParams,
-    GetStateAtPosParams,
-    GetRootStateParams,
     StartParams,
     Opts,
     RunParams,
@@ -42,12 +37,16 @@ from .protocol import (
     SetWorkspaceParams,
     TocParams,
     TocResponse,
-    _atd_missing_json_field,
-    _atd_bad_json,
+    AstParams,
+    AstAtPosParams,
+    GetStateAtPosParams,
+    GetRootStateParams,
+    ListNotationsParams,
+    ListNotationsResponse,
 )
 
 Params = Union[
-    ListNotationsInStatementParams,
+    ListNotationsParams,
     StartParams,
     GetStateAtPosParams,
     GetRootStateParams,
@@ -104,7 +103,7 @@ InspectGoals = Inspect(InspectGoals())
 
 def mk_request(id: int, params: Params) -> Request:
     match params:
-        case ListNotationsInStatementParams():
+        case ListNotationsParams():
             return Request(id, "petanque/list_notations_in_statement", params.to_json())
         case AstParams():
             return Request(id, "petanque/ast", params.to_json())
@@ -422,234 +421,6 @@ class Pytanque:
         except ValueError:
             failure = Failure.from_json_string(raw)
             raise PetanqueError(failure.error.code, failure.error.message)
-
-    def list_notations_in_statement(self, state: State, statement: str) -> list[dict]:
-        """
-        Get the list of notations appearing in a theorem statetemnt.
-        """
-        resp = self.query(ListNotationsInStatementParams(state.st, statement))
-        res = resp.result["st"]
-        logger.info(f"List notations in the statement:\n{statement}.")
-        return res
-
-    def ast(self, state: State, text: str) -> dict:
-        """
-        Get the Abstract Syntax Tree (AST) of a command parsed at a given state.
-
-        Parameters
-        ----------
-        state : State
-            The proof state providing the parsing context.
-        text : str
-            The command text to parse (e.g., "induction n", "Search nat").
-
-        Returns
-        -------
-        dict
-            The AST representation of the parsed command.
-
-        Raises
-        ------
-        PetanqueError
-            If the text cannot be parsed in the given state context.
-
-        Examples
-        --------
-        >>> with Pytanque("127.0.0.1", 8765) as client:
-        ...     state = client.start("./examples/foo.v", "addnC")
-        ...
-        ...     # Get AST for a tactic
-        ...     ast = client.ast(state, "induction n.")
-        ...     print("Tactic AST:", ast)
-        ...
-        ...     # Get AST for a search command
-        ...     ast = client.ast(state, "Search nat.")
-        ...     print("Search AST:", ast)
-        ...
-        ...     # Get AST for a complex expression
-        ...     ast = client.ast(state, "fun x => x + 1.")
-        ...     print("Expression AST:", ast)
-        """
-        resp = self.query(AstParams(state.st, text))
-        res = resp.result["st"]
-        logger.info(f"AST of {text}")
-        return res
-
-    def ast_at_pos(
-        self,
-        file: str,
-        line: int,
-        character: int,
-    ) -> dict:
-        """
-        Get the Abstract Syntax Tree (AST) at a specific position in a file.
-
-        Parameters
-        ----------
-        file : str
-            Path to the Rocq/Coq file.
-        line : int
-            Line number (0-based indexing).
-        character : int
-            Character position within the line (0-based indexing).
-
-        Returns
-        -------
-        dict
-            The AST representation of the syntax element at the specified position.
-
-        Raises
-        ------
-        PetanqueError
-            If the position is invalid or the file cannot be parsed.
-        ValueError
-            If the file path is invalid.
-
-        Examples
-        --------
-        >>> with Pytanque("127.0.0.1", 8765) as client:
-        ...     # Get AST at specific position in file
-        ...     ast = client.ast_at_pos("./examples/foo.v", line=5, character=10)
-        ...     print("AST at position:", ast)
-        ...
-        ...     # Get AST at theorem declaration
-        ...     ast = client.ast_at_pos("./examples/foo.v", line=0, character=0)
-        ...     print("Theorem declaration AST:", ast)
-        ...
-        ...     # Get AST at proof step
-        ...     ast = client.ast_at_pos("./examples/foo.v", line=3, character=5)
-        ...     print("Proof step AST:", ast)
-        """
-        path = os.path.abspath(file)
-        uri = pathlib.Path(path).as_uri()
-        pos = Position(line, character)
-        resp = self.query(AstAtPosParams(uri, pos))
-        res = resp.result
-        logger.info(f"AST at {pos.to_json_string()} in {uri}")
-        return res
-
-    def get_state_at_pos(
-        self, file: str, line: int, character: int, opts: Optional[Opts] = None
-    ) -> State:
-        """
-        Get the proof state at a specific position in a file.
-
-        This method returns the proof state that would be active at the specified
-        position, allowing you to inspect the context, goals, and available tactics
-        at any point in a proof script.
-
-        Parameters
-        ----------
-        file : str
-            Path to the Rocq/Coq file.
-        line : int
-            Line number (0-based indexing).
-        character : int
-            Character position within the line (0-based indexing).
-        opts : Opts, optional
-            Options for proof state management, by default None.
-
-        Returns
-        -------
-        State
-            The proof state at the specified position, including:
-            - st : int - State identifier
-            - proof_finished : bool - Whether proof is complete at this point
-            - feedback : List[Tuple[int, str]] - Messages from Rocq up to this point
-            - hash : int, optional - State hash
-
-        Raises
-        ------
-        PetanqueError
-            If the position is invalid or the file cannot be processed.
-        ValueError
-            If the file path is invalid.
-
-        Examples
-        --------
-        >>> with Pytanque("127.0.0.1", 8765) as client:
-        ...     # Get state at beginning of proof
-        ...     state = client.get_state_at_pos("./examples/foo.v", line=2, character=0)
-        ...     print(f"State at start: {state.st}, finished: {state.proof_finished}")
-        ...
-        ...     # Get state in middle of proof
-        ...     state = client.get_state_at_pos("./examples/foo.v", line=5, character=10)
-        ...     goals = client.goals(state)
-        ...     print(f"Goals at position: {len(goals)}")
-        ...
-        ...     # Get state at end of proof
-        ...     state = client.get_state_at_pos("./examples/foo.v", line=8, character=5)
-        ...     print(f"Proof finished: {state.proof_finished}")
-        ...
-        ...     # Check feedback at specific position
-        ...     for level, msg in state.feedback:
-        ...         print(f"Feedback level {level}: {msg}")
-        """
-        path = os.path.abspath(file)
-        uri = pathlib.Path(path).as_uri()
-        pos = Position(line, character)
-        resp = self.query(GetStateAtPosParams(uri, pos, opts))
-        res = State.from_json(resp.result)
-        logger.info(f"Get state at {pos.to_json_string()} in {uri} success")
-        return res
-
-    def get_root_state(self, file: str, opts: Optional[Opts] = None) -> State:
-        """
-        Get the initial (root) state of a document.
-
-        This method returns the very first state of the document, before any
-        commands or proofs have been executed. It represents the initial
-        environment with all imports and definitions loaded.
-
-        Parameters
-        ----------
-        file : str
-            Path to the Rocq/Coq file.
-        opts : Opts, optional
-            Options for proof state management, by default None.
-
-        Returns
-        -------
-        State
-            The root state of the document, including:
-            - st : int - State identifier for the initial state
-            - proof_finished : bool - Always False for root state
-            - feedback : List[Tuple[int, str]] - Initial messages (imports, etc.)
-            - hash : int, optional - State hash
-
-        Raises
-        ------
-        PetanqueError
-            If the file cannot be loaded or processed.
-        ValueError
-            If the file path is invalid.
-
-        Examples
-        --------
-        >>> with Pytanque("127.0.0.1", 8765) as client:
-        ...     # Get the root state of a file
-        ...     root_state = client.get_root_state("./examples/foo.v")
-        ...     print(f"Root state: {root_state.st}")
-        ...     print(f"Proof finished: {root_state.proof_finished}")  # Always False
-        ...
-        ...     # Check what's available in the initial environment
-        ...     premises = client.premises(root_state)
-        ...     print(f"Available in root context: {len(premises)} premises")
-        ...
-        ...     # Compare with state at specific position
-        ...     pos_state = client.get_state_at_pos("./examples/foo.v", line=3, character=0)
-        ...     print(f"Root state: {root_state.st}, Position state: {pos_state.st}")
-        ...
-        ...     # Check initial feedback
-        ...     for level, msg in root_state.feedback:
-        ...         print(f"Initial feedback level {level}: {msg}")
-        """
-        path = os.path.abspath(file)
-        uri = pathlib.Path(path).as_uri()
-        resp = self.query(GetRootStateParams(uri, opts))
-        res = State.from_json(resp.result)
-        logger.info(f"Get root state of {uri} success")
-        return res
 
     def start(
         self,
@@ -991,6 +762,269 @@ class Pytanque:
         res = TocResponse.from_json(resp.result)
         logger.info(f"Retrieved TOC of {file}.")
         return res.value
+
+    def ast(self, state: State, text: str) -> dict:
+        """
+        Get the Abstract Syntax Tree (AST) of a command parsed at a given state.
+
+        Parameters
+        ----------
+        state : State
+            The proof state providing the parsing context.
+        text : str
+            The command text to parse (e.g., "induction n", "Search nat").
+
+        Returns
+        -------
+        dict
+            The AST representation of the parsed command.
+
+        Raises
+        ------
+        PetanqueError
+            If the text cannot be parsed in the given state context.
+
+        Examples
+        --------
+        >>> with Pytanque("127.0.0.1", 8765) as client:
+        ...     state = client.start("./examples/foo.v", "addnC")
+        ...
+        ...     # Get AST for a tactic
+        ...     ast = client.ast(state, "induction n.")
+        ...     print("Tactic AST:", ast)
+        ...
+        ...     # Get AST for a search command
+        ...     ast = client.ast(state, "Search nat.")
+        ...     print("Search AST:", ast)
+        ...
+        ...     # Get AST for a complex expression
+        ...     ast = client.ast(state, "fun x => x + 1.")
+        ...     print("Expression AST:", ast)
+        """
+        resp = self.query(AstParams(state.st, text))
+        res = resp.result["st"]
+        logger.info(f"AST of {text}")
+        return res
+
+    def ast_at_pos(
+        self,
+        file: str,
+        line: int,
+        character: int,
+    ) -> dict:
+        """
+        Get the Abstract Syntax Tree (AST) at a specific position in a file.
+
+        Parameters
+        ----------
+        file : str
+            Path to the Rocq/Coq file.
+        line : int
+            Line number (0-based indexing).
+        character : int
+            Character position within the line (0-based indexing).
+
+        Returns
+        -------
+        dict
+            The AST representation of the syntax element at the specified position.
+
+        Raises
+        ------
+        PetanqueError
+            If the position is invalid or the file cannot be parsed.
+        ValueError
+            If the file path is invalid.
+
+        Examples
+        --------
+        >>> with Pytanque("127.0.0.1", 8765) as client:
+        ...     # Get AST at specific position in file
+        ...     ast = client.ast_at_pos("./examples/foo.v", line=5, character=10)
+        ...     print("AST at position:", ast)
+        ...
+        ...     # Get AST at theorem declaration
+        ...     ast = client.ast_at_pos("./examples/foo.v", line=0, character=0)
+        ...     print("Theorem declaration AST:", ast)
+        ...
+        ...     # Get AST at proof step
+        ...     ast = client.ast_at_pos("./examples/foo.v", line=3, character=5)
+        ...     print("Proof step AST:", ast)
+        """
+        path = os.path.abspath(file)
+        uri = pathlib.Path(path).as_uri()
+        pos = Position(line, character)
+        resp = self.query(AstAtPosParams(uri, pos))
+        res = resp.result
+        logger.info(f"AST at {pos.to_json_string()} in {uri}")
+        return res
+
+    def get_state_at_pos(
+        self, file: str, line: int, character: int, opts: Optional[Opts] = None
+    ) -> State:
+        """
+        Get the proof state at a specific position in a file.
+
+        This method returns the proof state that would be active at the specified
+        position, allowing you to inspect the context, goals, and available tactics
+        at any point in a proof script.
+
+        Parameters
+        ----------
+        file : str
+            Path to the Rocq/Coq file.
+        line : int
+            Line number (0-based indexing).
+        character : int
+            Character position within the line (0-based indexing).
+        opts : Opts, optional
+            Options for proof state management, by default None.
+
+        Returns
+        -------
+        State
+            The proof state at the specified position, including:
+            - st : int - State identifier
+            - proof_finished : bool - Whether proof is complete at this point
+            - feedback : List[Tuple[int, str]] - Messages from Rocq up to this point
+            - hash : int, optional - State hash
+
+        Raises
+        ------
+        PetanqueError
+            If the position is invalid or the file cannot be processed.
+        ValueError
+            If the file path is invalid.
+
+        Examples
+        --------
+        >>> with Pytanque("127.0.0.1", 8765) as client:
+        ...     # Get state at beginning of proof
+        ...     state = client.get_state_at_pos("./examples/foo.v", line=2, character=0)
+        ...     print(f"State at start: {state.st}, finished: {state.proof_finished}")
+        ...
+        ...     # Get state in middle of proof
+        ...     state = client.get_state_at_pos("./examples/foo.v", line=5, character=10)
+        ...     goals = client.goals(state)
+        ...     print(f"Goals at position: {len(goals)}")
+        ...
+        ...     # Get state at end of proof
+        ...     state = client.get_state_at_pos("./examples/foo.v", line=8, character=5)
+        ...     print(f"Proof finished: {state.proof_finished}")
+        ...
+        ...     # Check feedback at specific position
+        ...     for level, msg in state.feedback:
+        ...         print(f"Feedback level {level}: {msg}")
+        """
+        path = os.path.abspath(file)
+        uri = pathlib.Path(path).as_uri()
+        pos = Position(line, character)
+        resp = self.query(GetStateAtPosParams(uri, pos, opts))
+        res = State.from_json(resp.result)
+        logger.info(f"Get state at {pos.to_json_string()} in {uri} success")
+        return res
+
+    def get_root_state(self, file: str, opts: Optional[Opts] = None) -> State:
+        """
+        Get the initial (root) state of a document.
+
+        This method returns the very first state of the document, before any
+        commands or proofs have been executed. It represents the initial
+        environment with all imports and definitions loaded.
+
+        Parameters
+        ----------
+        file : str
+            Path to the Rocq/Coq file.
+        opts : Opts, optional
+            Options for proof state management, by default None.
+
+        Returns
+        -------
+        State
+            The root state of the document, including:
+            - st : int - State identifier for the initial state
+            - proof_finished : bool - Always False for root state
+            - feedback : List[Tuple[int, str]] - Initial messages (imports, etc.)
+            - hash : int, optional - State hash
+
+        Raises
+        ------
+        PetanqueError
+            If the file cannot be loaded or processed.
+        ValueError
+            If the file path is invalid.
+
+        Examples
+        --------
+        >>> with Pytanque("127.0.0.1", 8765) as client:
+        ...     # Get the root state of a file
+        ...     root_state = client.get_root_state("./examples/foo.v")
+        ...     print(f"Root state: {root_state.st}")
+        ...     print(f"Proof finished: {root_state.proof_finished}")  # Always False
+        ...
+        ...     # Check what's available in the initial environment
+        ...     premises = client.premises(root_state)
+        ...     print(f"Available in root context: {len(premises)} premises")
+        ...
+        ...     # Compare with state at specific position
+        ...     pos_state = client.get_state_at_pos("./examples/foo.v", line=3, character=0)
+        ...     print(f"Root state: {root_state.st}, Position state: {pos_state.st}")
+        ...
+        ...     # Check initial feedback
+        ...     for level, msg in root_state.feedback:
+        ...         print(f"Initial feedback level {level}: {msg}")
+        """
+        path = os.path.abspath(file)
+        uri = pathlib.Path(path).as_uri()
+        resp = self.query(GetRootStateParams(uri, opts))
+        res = State.from_json(resp.result)
+        logger.info(f"Get root state of {uri} success")
+        return res
+
+    def list_notations_in_statement(self, state: State, statement: str) -> list[dict]:
+        """
+        Get the list of notations appearing in a theorem/lemma statement.
+
+        This method analyzes a proposition or type statement (the part after the colon
+        in a Lemma/Theorem/Proposition declaration) and returns all notations that appear
+        in it, along with their interpretations in the given state.
+
+        IMPORTANT: This only works on statements, not on arbitrary
+        Coq commands or terms. For example, it works on "Lemma foo: n + m = m + n"  but not on "Goal n + m = m + n" or "Check (n + m)".
+
+        Parameters
+        ----------
+        state : State
+            The proof state providing the parsing context.
+        statement : str
+            The statement to analyze - must be a proposition or type expression.
+
+        Returns
+        -------
+        list[dict]
+            A list of the notations found in the statement with path, secpath, notation, and scope.
+
+        Raises
+        ------
+        PetanqueError
+            If the statement cannot be parsed in the given state context.
+
+        Examples
+        --------
+        >>> with Pytanque("127.0.0.1", 8765) as client:
+        ...     # Start a proof to get a state with notations in scope
+        ...     state = client.start("./examples/foo.v", "addnC")
+        ...
+        ...     # Works: List notations in a statement (proposition/type)
+        ...     notations = client.list_notations_in_statement(state, "Lemma foo: 2 * 1 + 0 / 1 = 2")
+        ...     print(f"Found {len(notations)} notations")
+        """
+        resp = self.query(ListNotationsParams(state.st, statement))
+        # res = resp.result["st"]
+        res = ListNotationsResponse.from_json(resp.result)
+        logger.info(f"List notations in the statement:\n{statement}.")
+        return res.st
 
     def __exit__(
         self,

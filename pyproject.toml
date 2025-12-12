@@ -1,11 +1,12 @@
 [project]
 name = "pytanque"
-version = "0.2.0"
+version = "0.2.1"
 description = ""
 authors = [
     {name = "Guillaume Baudart", email = "guillaume.baudart@inria.fr"},
     {name = "Emilio J. Gallego Arias", email = "emilio-jesus.gallego-arias@inria.fr"},
-    {name = "Laetitia Teodorescu", email = "laetitia.teodorescu@inria.fr"}
+    {name = "Laetitia Teodorescu", email = "laetitia.teodorescu@inria.fr"},
+    {name = "Jules Viennot", email = "jules.viennot@inria.fr"}
 ]
 readme = "README.md"
 license = {text = "Apache-2.0"}
