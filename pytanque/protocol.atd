@@ -31,32 +31,6 @@ type position = {
     character: int;
 }
 
-type list_notations_in_statement_params = {
-    st: int;
-    statement: string;
-}
-
-type ast_params = {
-    st: int;
-    text: string;
-}
-
-type ast_at_pos_params = {
-    uri: string;
-    position: position;
-}
-
-type get_state_at_pos_params = {
-    ?opts: opts option;
-    uri: string;
-    position: position
-}
-
-type get_root_state_params = {
-    ?opts: opts option;
-    uri: string;
-}
-
 type start_params = {
     ?pre_commands: string option;
     ?opts: opts option;
@@ -136,3 +110,41 @@ type toc_params = {
 }
 
 type toc_response = (string * abstract) list
+
+type ast_params = {
+    st: int;
+    text: string;
+}
+
+type ast_at_pos_params = {
+    uri: string;
+    position: position;
+}
+
+type get_state_at_pos_params = {
+    ?opts: opts option;
+    uri: string;
+    position: position
+}
+
+type get_root_state_params = {
+    ?opts: opts option;
+    uri: string;
+}
+
+type notation_info = {
+    locations: abstract list;
+    path: string;
+    secpath: string;
+    notation: string;
+    scope: string;
+}
+
+type list_notations_params = {
+    st: int;
+    statement: string;
+}
+
+type list_notations_response = {
+    st: notation_info list
+}

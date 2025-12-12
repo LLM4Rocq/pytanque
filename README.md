@@ -20,8 +20,8 @@ Pytanque is a Python API for lightweight communication with the [Rocq](https://r
 - **Interactive theorem proving**: Execute tactics and commands step by step
 - **Comprehensive feedback**: Access all Rocq messages (errors, warnings, search results)
 - **State management**: Navigate proof states and compare them
-- **AST parsing**: Get abstract syntax trees for commands and file positions _(only with the dev version of coq-lsp)_
-- **Position-based queries**: Get states at specific file positions _(only with the dev version of coq-lsp)_
+- **AST parsing**: Get abstract syntax trees for commands and file positions
+- **Position-based queries**: Get states at specific file positions 
 
 ## Installation
 
@@ -136,9 +136,10 @@ with Pytanque(stdio=True) as client:
 - **`state_equal(st1, st2, kind)`**: Compare proof states
 - **`state_hash(state)`**: Get state hash
 - **`toc(file)`**: Get table of contents
-- **`ast(state, text)`**: Parse command to AST _(only with the dev version of coq-lsp)_
-- **`ast_at_pos(file, line, char)`**: Get AST at file position _(only with the dev version of coq-lsp)_
-- **`get_state_at_pos(file, line, char)`**: Get proof state at position _(only with the dev version of coq-lsp)_
+- **`ast(state, text)`**: Parse command to AST
+- **`ast_at_pos(file, line, char)`**: Get AST at file position
+- **`get_state_at_pos(file, line, char)`**: Get proof state at position
+- **`list_notation_in_statement(state, statement)`**: List the notations in a theorem
 
 ### Working with Feedback
 

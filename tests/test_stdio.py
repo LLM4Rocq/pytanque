@@ -2,7 +2,7 @@
 Test for stdio communication with petanque subprocess.
 
 These tests verify that the Pytanque client can communicate with petanque
-via stdin/stdout subprocess communication using LSP message format as an 
+via stdin/stdout subprocess communication using LSP message format as an
 alternative to socket communication.
 
 Note: These tests require the 'pet' command to be available in PATH.
