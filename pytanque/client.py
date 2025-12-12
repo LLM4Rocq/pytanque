@@ -625,6 +625,18 @@ class Pytanque:
                 g.pp = pp_goal(g)
         return res
 
+    def complete_goals(self, state: State, pretty: bool = True) -> Any:
+        """
+        Return the complete goal information.
+        """
+        resp = self.query(GoalsParams(state.st))
+        if not resp.result:
+            res = {}
+        else:
+            res = GoalsResponse.from_json(resp.result)
+        logger.info(f"Current complete goals: {res}")
+        return res
+
     def premises(self, state: State) -> Any:
         """
         Get the list of accessible premises (lemmas, definitions) for the current state.
