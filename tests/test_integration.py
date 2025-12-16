@@ -167,6 +167,19 @@ class TestNotationListing:
             # Should find at least the + and = notations
             assert any(item.notation == "_ + _" for item in notations)
 
+    def test_list_notations_scope(self, server_config, example_files, petanque_server):
+        """Test notation listing behavior with respect to scopes."""
+        with Pytanque("127.0.0.1", 8765) as client:
+            state = client.start("./examples/foo.v", 'use_notation_wo_scope')
+            notations = client.list_notations_in_statement(state, "Lemma use_notation_wo_scope : 1 ⊕ 2 = 3.")
+            # The ⊕ notation does not belong to a scope.
+            assert notations[0].scope is None
+
+            state = client.start("./examples/foo.v", 'use_notation_w_scope')
+            notations = client.list_notations_in_statement(state, "Lemma use_notation_w_scope : 1 ⊕_s 2 = 3.")
+            # The ⊕_s notation belongs to the 'my_scope' scope.
+            assert notations[0].scope == 'my_scope'
+
     def test_list_notations_complex(
         self, server_config, example_files, petanque_server
     ):
