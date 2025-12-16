@@ -137,7 +137,7 @@ type notation_info = {
     path: string;
     secpath: string;
     notation: string;
-    scope: string;
+    scope: string nullable;
 }
 
 type list_notations_params = {

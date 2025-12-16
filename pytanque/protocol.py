@@ -950,7 +950,7 @@ class NotationInfo:
     path: str
     secpath: str
     notation: str
-    scope: str
+    scope: Optional[str]
 
     @classmethod
     def from_json(cls, x: Any) -> "NotationInfo":
@@ -977,7 +977,7 @@ class NotationInfo:
                     else _atd_missing_json_field("NotationInfo", "notation")
                 ),
                 scope=(
-                    _atd_read_string(x["scope"])
+                    _atd_read_nullable(_atd_read_string)(x["scope"])
                     if "scope" in x
                     else _atd_missing_json_field("NotationInfo", "scope")
                 ),
@@ -991,7 +991,7 @@ class NotationInfo:
         res["path"] = _atd_write_string(self.path)
         res["secpath"] = _atd_write_string(self.secpath)
         res["notation"] = _atd_write_string(self.notation)
-        res["scope"] = _atd_write_string(self.scope)
+        res["scope"] = _atd_write_nullable(_atd_write_string)(self.scope)
         return res
 
     @classmethod
