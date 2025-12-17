@@ -275,10 +275,191 @@ def _atd_write_option(
 
 
 @dataclass
+class Position:
+    """Original type: position = { ... }"""
+
+    line: int
+    character: int
+
+    @classmethod
+    def from_json(cls, x: Any) -> "Position":
+        if isinstance(x, dict):
+            return cls(
+                line=(
+                    _atd_read_int(x["line"])
+                    if "line" in x
+                    else _atd_missing_json_field("Position", "line")
+                ),
+                character=(
+                    _atd_read_int(x["character"])
+                    if "character" in x
+                    else _atd_missing_json_field("Position", "character")
+                ),
+            )
+        else:
+            _atd_bad_json("Position", x)
+
+    def to_json(self) -> Any:
+        res: Dict[str, Any] = {}
+        res["line"] = _atd_write_int(self.line)
+        res["character"] = _atd_write_int(self.character)
+        return res
+
+    @classmethod
+    def from_json_string(cls, x: str) -> "Position":
+        return cls.from_json(json.loads(x))
+
+    def to_json_string(self, **kw: Any) -> str:
+        return json.dumps(self.to_json(), **kw)
+
+
+@dataclass
+class Range:
+    """Original type: range = { ... }"""
+
+    start: Position
+    end: Position
+
+    @classmethod
+    def from_json(cls, x: Any) -> "Range":
+        if isinstance(x, dict):
+            return cls(
+                start=(
+                    Position.from_json(x["start"])
+                    if "start" in x
+                    else _atd_missing_json_field("Range", "start")
+                ),
+                end=(
+                    Position.from_json(x["end"])
+                    if "end" in x
+                    else _atd_missing_json_field("Range", "end")
+                ),
+            )
+        else:
+            _atd_bad_json("Range", x)
+
+    def to_json(self) -> Any:
+        res: Dict[str, Any] = {}
+        res["start"] = (lambda x: x.to_json())(self.start)
+        res["end"] = (lambda x: x.to_json())(self.end)
+        return res
+
+    @classmethod
+    def from_json_string(cls, x: str) -> "Range":
+        return cls.from_json(json.loads(x))
+
+    def to_json_string(self, **kw: Any) -> str:
+        return json.dumps(self.to_json(), **kw)
+
+
+@dataclass
+class Name:
+    """Original type: name = { ... }"""
+
+    v: Optional[str]
+    range: Range
+
+    @classmethod
+    def from_json(cls, x: Any) -> "Name":
+        if isinstance(x, dict):
+            return cls(
+                v=(
+                    _atd_read_nullable(_atd_read_string)(x["v"])
+                    if "v" in x
+                    else _atd_missing_json_field("Name", "v")
+                ),
+                range=(
+                    Range.from_json(x["range"])
+                    if "range" in x
+                    else _atd_missing_json_field("Name", "range")
+                ),
+            )
+        else:
+            _atd_bad_json("Name", x)
+
+    def to_json(self) -> Any:
+        res: Dict[str, Any] = {}
+        res["v"] = _atd_write_nullable(_atd_write_string)(self.v)
+        res["range"] = (lambda x: x.to_json())(self.range)
+        return res
+
+    @classmethod
+    def from_json_string(cls, x: str) -> "Name":
+        return cls.from_json(json.loads(x))
+
+    def to_json_string(self, **kw: Any) -> str:
+        return json.dumps(self.to_json(), **kw)
+
+
+@dataclass
+class TocElement:
+    """Original type: toc_element = { ... }"""
+
+    children: Optional[List[TocElement]]
+    detail: str
+    kind: int
+    name: Name
+    range: Range
+
+    @classmethod
+    def from_json(cls, x: Any) -> "TocElement":
+        if isinstance(x, dict):
+            return cls(
+                children=(
+                    _atd_read_nullable(_atd_read_list(TocElement.from_json))(
+                        x["children"]
+                    )
+                    if "children" in x
+                    else _atd_missing_json_field("TocElement", "children")
+                ),
+                detail=(
+                    _atd_read_string(x["detail"])
+                    if "detail" in x
+                    else _atd_missing_json_field("TocElement", "detail")
+                ),
+                kind=(
+                    _atd_read_int(x["kind"])
+                    if "kind" in x
+                    else _atd_missing_json_field("TocElement", "kind")
+                ),
+                name=(
+                    Name.from_json(x["name"])
+                    if "name" in x
+                    else _atd_missing_json_field("TocElement", "name")
+                ),
+                range=(
+                    Range.from_json(x["range"])
+                    if "range" in x
+                    else _atd_missing_json_field("TocElement", "range")
+                ),
+            )
+        else:
+            _atd_bad_json("TocElement", x)
+
+    def to_json(self) -> Any:
+        res: Dict[str, Any] = {}
+        res["children"] = _atd_write_nullable(_atd_write_list((lambda x: x.to_json())))(
+            self.children
+        )
+        res["detail"] = _atd_write_string(self.detail)
+        res["kind"] = _atd_write_int(self.kind)
+        res["name"] = (lambda x: x.to_json())(self.name)
+        res["range"] = (lambda x: x.to_json())(self.range)
+        return res
+
+    @classmethod
+    def from_json_string(cls, x: str) -> "TocElement":
+        return cls.from_json(json.loads(x))
+
+    def to_json_string(self, **kw: Any) -> str:
+        return json.dumps(self.to_json(), **kw)
+
+
+@dataclass
 class TocResponse:
     """Original type: toc_response"""
 
-    value: List[Tuple[str, Any]]
+    value: List[Tuple[str, List[TocElement]]]
 
     @classmethod
     def from_json(cls, x: Any) -> "TocResponse":
@@ -286,7 +467,10 @@ class TocResponse:
             _atd_read_list(
                 (
                     lambda x: (
-                        (_atd_read_string(x[0]), (lambda x: x)(x[1]))
+                        (
+                            _atd_read_string(x[0]),
+                            _atd_read_list(TocElement.from_json)(x[1]),
+                        )
                         if isinstance(x, list) and len(x) == 2
                         else _atd_bad_json("array of length 2", x)
                     )
@@ -298,7 +482,10 @@ class TocResponse:
         return _atd_write_list(
             (
                 lambda x: (
-                    [_atd_write_string(x[0]), (lambda x: x)(x[1])]
+                    [
+                        _atd_write_string(x[0]),
+                        _atd_write_list((lambda x: x.to_json()))(x[1]),
+                    ]
                     if isinstance(x, tuple) and len(x) == 2
                     else _atd_bad_python("tuple of length 2", x)
                 )
@@ -897,45 +1084,6 @@ class PremisesParams:
 
     @classmethod
     def from_json_string(cls, x: str) -> "PremisesParams":
-        return cls.from_json(json.loads(x))
-
-    def to_json_string(self, **kw: Any) -> str:
-        return json.dumps(self.to_json(), **kw)
-
-
-@dataclass
-class Position:
-    """Original type: position = { ... }"""
-
-    line: int
-    character: int
-
-    @classmethod
-    def from_json(cls, x: Any) -> "Position":
-        if isinstance(x, dict):
-            return cls(
-                line=(
-                    _atd_read_int(x["line"])
-                    if "line" in x
-                    else _atd_missing_json_field("Position", "line")
-                ),
-                character=(
-                    _atd_read_int(x["character"])
-                    if "character" in x
-                    else _atd_missing_json_field("Position", "character")
-                ),
-            )
-        else:
-            _atd_bad_json("Position", x)
-
-    def to_json(self) -> Any:
-        res: Dict[str, Any] = {}
-        res["line"] = _atd_write_int(self.line)
-        res["character"] = _atd_write_int(self.character)
-        return res
-
-    @classmethod
-    def from_json_string(cls, x: str) -> "Position":
         return cls.from_json(json.loads(x))
 
     def to_json_string(self, **kw: Any) -> str:
