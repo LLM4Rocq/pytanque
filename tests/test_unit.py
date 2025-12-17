@@ -232,8 +232,9 @@ class TestTocMethod:
             assert all(isinstance(item, tuple) and len(item) == 2 for item in toc)
 
             print("Available definitions:")
-            for name, definition in toc:
-                print(f"  {name}: {definition[0]['detail']}")
+            for name, definitions in toc:
+                for definition in definitions:
+                    print(f"  {name}: {definition.detail}")
 
 
 class TestPetanqueErrorHandling:
