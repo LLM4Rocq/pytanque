@@ -30,3 +30,7 @@ Lemma use_notation_w_scope : 1 ⊕_s 2 = 3.
 Proof.
   reflexivity.
 Qed.
+
+Inductive MyNum : Type :=
+| MyZero : MyNum
+| MySucc : MyNum -> MyNum.
