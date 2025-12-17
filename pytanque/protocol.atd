@@ -109,7 +109,25 @@ type toc_params = {
     uri: string;
 }
 
-type toc_response = (string * abstract) list
+type range = {
+    start: position;
+    end: position;
+}
+
+type name = {
+    v: string nullable;
+    range: range;
+}
+
+type toc_element = {
+    children: toc_element list nullable;
+    detail: string;
+    kind: int;
+    name: name;
+    range: range;
+}
+
+type toc_response = (string * toc_element list) list
 
 type ast_params = {
     st: int;

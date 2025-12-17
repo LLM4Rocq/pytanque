@@ -7,6 +7,7 @@ import subprocess
 from typing import (
     Tuple,
     Union,
+    List,
     Any,
     Optional,
     Type,
@@ -37,6 +38,7 @@ from .protocol import (
     SetWorkspaceParams,
     TocParams,
     TocResponse,
+    TocElement,
     AstParams,
     AstAtPosParams,
     GetStateAtPosParams,
@@ -739,7 +741,7 @@ class Pytanque:
         logger.info(f"States hash {state.st} = {res.value}")
         return res.value
 
-    def toc(self, file: str) -> list[tuple[str, Any]]:
+    def toc(self, file: str) -> list[tuple[str, List[TocElement]]]:
         """
         Get the table of contents (available definitions and theorems) for a Coq/Rocq file.
 
