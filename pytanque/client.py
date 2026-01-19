@@ -4,6 +4,7 @@ import os
 import pathlib
 import logging
 import subprocess
+import select
 from typing import (
     Tuple,
     Union,
@@ -331,9 +332,32 @@ class Pytanque:
         self.process.stdin.write(lsp_message.encode("utf-8"))
         self.process.stdin.flush()
 
-    def _read_lsp_response(self) -> str:
-        """Read a JSON-RPC response using LSP format, skipping notifications."""
+    def _read_lsp_response(self, read_timeout: Optional[int] = None) -> str:
+        """Read a JSON-RPC response using LSP format, skipping notifications.
+
+        Parameters
+        ----------
+        read_timeout : int, optional
+            Timeout in seconds for reading from pet process. If None, uses default of 120s.
+            Set to 0 for no timeout (blocking).
+        """
+        timeout = read_timeout if read_timeout is not None else 120  # Default 2 minutes
+
         while True:
+            # Check if pet process is still alive
+            if self.process.poll() is not None:
+                raise PetanqueError(-32603, "Pet process died unexpectedly")
+
+            # Wait for data with timeout (if timeout > 0)
+            if timeout > 0:
+                ready, _, _ = select.select([self.process.stdout], [], [], timeout)
+                if not ready:
+                    # Process is unresponsive - kill it
+                    logger.error(f"Pet process unresponsive for {timeout}s, killing...")
+                    self.process.kill()
+                    self.process.wait()
+                    raise PetanqueError(-32603, f"Pet process timed out after {timeout}s - killed")
+
             # Read Content-Length header
             header_line = self.process.stdout.readline().decode("utf-8")
             if not header_line:
@@ -365,7 +389,7 @@ class Pytanque:
 
             return json_content
 
-    def query(self, params: Params, size: int = 4096) -> Response:
+    def query(self, params: Params, size: int = 4096, read_timeout: Optional[int] = None) -> Response:
         """
         Send a low-level JSON-RPC query to the server or subprocess.
 
@@ -378,6 +402,8 @@ class Pytanque:
             JSON-RPC parameters (one of StartParams, RunParams, GoalsParams, etc.).
         size : int, optional
             Buffer size for receiving response, by default 4096 (socket mode only).
+        read_timeout : int, optional
+            Timeout in seconds for reading response. Default is 120s. Set to 0 for no timeout.
 
         Returns
         -------
@@ -410,7 +436,7 @@ class Pytanque:
             raw = self._read_socket_response(size)
         elif self.mode == "stdio":
             self._send_lsp_message(payload)
-            raw = self._read_lsp_response()
+            raw = self._read_lsp_response(read_timeout=read_timeout)
 
         try:
             logger.info(f"Query Response: {raw}")
@@ -510,6 +536,7 @@ class Pytanque:
         opts: Optional[Opts] = None,
         verbose: bool = False,
         timeout: Optional[int] = None,
+        read_timeout: Optional[int] = None,
     ) -> State:
         """
         Execute a command on the current proof state.
@@ -533,7 +560,10 @@ class Pytanque:
         verbose : bool, optional
             Whether to print goals after command execution, by default False.
         timeout : int, optional
-            Timeout in seconds for command execution, by default None.
+            Timeout in seconds for Rocq command execution (adds Timeout prefix), by default None.
+        read_timeout : int, optional
+            Timeout in seconds for waiting for pet process response, by default 120s.
+            This is a hard timeout - if pet doesn't respond, it will be killed.
 
         Returns
         -------
@@ -545,7 +575,7 @@ class Pytanque:
         Raises
         ------
         PetanqueError
-            If command execution fails.
+            If command execution fails or pet process times out.
         TimeoutError
             If command execution exceeds timeout.
 
@@ -571,10 +601,13 @@ class Pytanque:
         ...
         ...     # Execute with timeout
         ...     state = client.run(state, "auto.", timeout=5)
+        ...
+        ...     # Execute with hard read timeout (kills pet if unresponsive)
+        ...     state = client.run(state, "native_compute.", read_timeout=30)
         """
         if timeout and cmd.endswith("."):
             cmd = f"Timeout {timeout} {cmd}"
-        resp = self.query(RunParams(state.st, cmd, opts))
+        resp = self.query(RunParams(state.st, cmd, opts), read_timeout=read_timeout)
         res = State.from_json(resp.result)
         logger.info(f"Run command {cmd}.")
         if verbose:
