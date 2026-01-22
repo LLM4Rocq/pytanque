@@ -68,7 +68,7 @@ type goal = {
     ?pp: string option;
 }
 
-type goals_response = {
+type base_goals_response = {
     goals : goal list;
     stack: (abstract list * abstract list) list;
     shelf: abstract list;
@@ -79,7 +79,15 @@ type premises_params = {
     st: int;
 }
 
-type premises_response = abstract
+type base_premises_response = abstract
+
+type base_ast_response = {
+    result: abstract
+}
+
+type base_ast_at_pos_response = {
+    result: abstract
+}
 
 type inspect = [
     InspectPhysical <json name="Physical"> |
@@ -92,13 +100,13 @@ type state_equal_params = {
     st2: int;
 }
 
-type state_equal_response = bool
+type base_state_equal_response = bool
 
 type state_hash_params = {
     st: int;
 }
 
-type state_hash_response = int
+type base_state_hash_response = int
 
 type set_workspace_params = {
     debug: bool;
@@ -127,7 +135,7 @@ type toc_element = {
     range: range;
 }
 
-type toc_response = (string * toc_element list) list
+type base_toc_response = (string * toc_element list) list
 
 type ast_params = {
     st: int;
@@ -163,6 +171,6 @@ type list_notations_params = {
     statement: string;
 }
 
-type list_notations_response = {
+type base_list_notations_in_statement_response = {
     st: notation_info list
 }
