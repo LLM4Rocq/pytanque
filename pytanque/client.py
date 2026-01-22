@@ -1,9 +1,14 @@
+from __future__ import annotations
 import socket
 import json
 import os
 import pathlib
 import logging
 import subprocess
+from dataclasses import fields
+from enum import StrEnum
+import functools
+
 from typing import (
     Tuple,
     Union,
@@ -12,6 +17,7 @@ from typing import (
     Optional,
     Type,
 )
+import requests
 from typing_extensions import Self
 from types import TracebackType
 from .protocol import (
@@ -26,27 +32,38 @@ from .protocol import (
     PremisesParams,
     State,
     Goal,
-    GoalsResponse,
-    PremisesResponse,
     Inspect,
     InspectPhysical,
     InspectGoals,
     StateEqualParams,
-    StateEqualResponse,
     StateHashParams,
-    StateHashResponse,
     SetWorkspaceParams,
     TocParams,
-    TocResponse,
     TocElement,
     AstParams,
     AstAtPosParams,
     GetStateAtPosParams,
     GetRootStateParams,
     ListNotationsParams,
-    ListNotationsResponse,
 )
 
+from .response import (
+    AstResponse,
+    AstAtPosResponse,
+    BaseResponse,
+    CompleteGoalsResponse,
+    GetRootStateResponse,
+    GetStateAtPosResponse,
+    GoalsResponse,
+    ListNotationsInStatementResponse,
+    PremisesResponse,
+    RunResponse,
+    SetWorkspaceResponse,
+    StartResponse,
+    StateEqualResponse,
+    StateHashResponse,
+    TocResponse,
+)
 Params = Union[
     ListNotationsParams,
     StartParams,
@@ -103,37 +120,34 @@ InspectPhysical = Inspect(InspectPhysical())
 InspectGoals = Inspect(InspectGoals())
 
 
-def mk_request(id: int, params: Params) -> Request:
-    match params:
-        case ListNotationsParams():
-            return Request(id, "petanque/list_notations_in_statement", params.to_json())
-        case AstParams():
-            return Request(id, "petanque/ast", params.to_json())
-        case AstAtPosParams():
-            return Request(id, "petanque/ast_at_pos", params.to_json())
-        case GetStateAtPosParams():
-            return Request(id, "petanque/get_state_at_pos", params.to_json())
-        case GetRootStateParams():
-            return Request(id, "petanque/get_root_state", params.to_json())
-        case StartParams():
-            return Request(id, "petanque/start", params.to_json())
-        case RunParams():
-            return Request(id, "petanque/run", params.to_json())
-        case GoalsParams():
-            return Request(id, "petanque/goals", params.to_json())
-        case PremisesParams():
-            return Request(id, "petanque/premises", params.to_json())
-        case StateEqualParams():
-            return Request(id, "petanque/state/eq", params.to_json())
-        case StateHashParams():
-            return Request(id, "petanque/state/hash", params.to_json())
-        case SetWorkspaceParams():
-            return Request(id, "petanque/setWorkspace", params.to_json())
-        case TocParams():
-            return Request(id, "petanque/toc", params.to_json())
-        case _:
-            raise PetanqueError(-32600, "Invalid request params")
+def mk_request(id: int, params: Params, route: str, project_state=True) -> Request:
+    # TODO: update petanque to remove project_state?
+    params_json = params.to_json()
+    if project_state:
+        for f in fields(params):
+            value = getattr(params, f.name)
+            if isinstance(value, State):
+                params_json[f.name] = params_json[f.name]['st']
+    return Request(id, route, params_json)
 
+def send_request(route: str, response_cls:BaseResponse, is_session=False, continues_session=False):
+    """
+    Send the return parameters to `mk_request` through the given route.
+    """
+    def decorator(fn):
+        @functools.wraps(fn)
+        def wrapper(self: Pytanque, *args, **kwargs):
+            params = fn(self, *args, **kwargs)
+            res = self.query(params, route)
+            return response_cls.extract_response(res)
+        wrapper.__send_request__ = route
+        wrapper.__is_session__ = is_session
+        wrapper.__continues_session = continues_session
+        if continues_session and not is_session:
+            raise PetanqueError(f"is_session is set to False in the send_request decorator for {fn.__name__},\
+                                 while continue_session is set to True.")
+        return wrapper
+    return decorator
 
 def pp_goal(g: Goal) -> str:
     hyps = "\n".join(
@@ -143,6 +157,11 @@ def pp_goal(g: Goal) -> str:
         ]
     )
     return f"{hyps}\n|-{g.ty}"
+
+class PytanqueMode(StrEnum):
+    STDIO = 'stdio'
+    SOCKET = 'socket'
+    HTTP = 'http'
 
 
 class Pytanque:
@@ -201,6 +220,7 @@ class Pytanque:
         host: Optional[str] = None,
         port: Optional[int] = None,
         stdio: bool = False,
+        mode: PytanqueMode = PytanqueMode.SOCKET
     ):
         """
         Initialize a new Pytanque client instance.
@@ -224,14 +244,14 @@ class Pytanque:
         >>> client = Pytanque(stdio=True)
         >>> client.connect()
         """
-        if stdio:
-            self.mode = "stdio"
+        if stdio or mode == PytanqueMode.STDIO:
+            self.mode = PytanqueMode.STDIO
             self.process = None
             self.host = None
             self.port = None
             self.socket = None
         elif host is not None and port is not None:
-            self.mode = "socket"
+            self.mode = mode
             self.host = host
             self.port = port
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -266,10 +286,10 @@ class Pytanque:
         >>> client.connect()
         >>> client.close()
         """
-        if self.mode == "socket":
+        if self.mode == PytanqueMode.SOCKET:
             self.socket.connect((self.host, self.port))
             logger.info(f"Connected to the socket")
-        elif self.mode == "stdio":
+        elif self.mode == PytanqueMode.STDIO:
             self.process = subprocess.Popen(
                 ["pet"],
                 stdin=subprocess.PIPE,
@@ -278,6 +298,8 @@ class Pytanque:
                 text=False,
             )
             logger.info(f"Spawned pet subprocess")
+        elif self.mode == PytanqueMode.HTTP:
+            logger.info("No connection required for HTTP mode.")
 
     def close(self) -> None:
         """
@@ -295,10 +317,10 @@ class Pytanque:
         >>> client.connect()
         >>> client.close()
         """
-        if self.mode == "socket":
+        if self.mode == PytanqueMode.SOCKET:
             self.socket.close()
             logger.info(f"Socket closed")
-        elif self.mode == "stdio":
+        elif self.mode == PytanqueMode.STDIO:
             if self.process:
                 self.process.terminate()
                 try:
@@ -307,6 +329,8 @@ class Pytanque:
                     self.process.kill()
                     self.process.wait()
                 logger.info(f"Pet subprocess terminated")
+        elif self.mode == PytanqueMode.HTTP:
+            logger.info("No closing process required for HTTP mode.")
 
     def __enter__(self) -> Self:
         self.connect()
@@ -321,6 +345,21 @@ class Pytanque:
             if f.endswith("\n"):
                 break
         return "".join(fragments)
+
+    def _send_request_message(self, payload: Any) -> None:
+        url = f"http://{self.host}:{self.port}"
+        response = requests.post(
+            url,
+            data=payload,
+            headers={"Content-Type": "application/json"}
+        )
+        try:
+            _ = response.json()
+        except json.JSONDecodeError as e:
+            raise PetanqueError(
+                -32700, f"Invalid JSON response: {response.text}"
+            ) from e
+        return response.text
 
     def _send_lsp_message(self, json_payload: str) -> None:
         """Send a JSON-RPC message using LSP format (Content-Length header + JSON)."""
@@ -365,7 +404,7 @@ class Pytanque:
 
             return json_content
 
-    def query(self, params: Params, size: int = 4096) -> Response:
+    def query(self, params: Params, route: str, size: int = 4096) -> Response:
         """
         Send a low-level JSON-RPC query to the server or subprocess.
 
@@ -401,17 +440,20 @@ class Pytanque:
         >>> client.close()
         """
         self.id += 1
-        request = mk_request(self.id, params)
+        project_state = (self.mode != PytanqueMode.HTTP)
+        # TODO: Maybe update petanque so that it takes whole state as input instead of state.st
+        request = mk_request(self.id, params, route, project_state=project_state)
         payload = json.dumps(request.to_json()) + "\n"
         logger.info(f"Query Payload: {payload}")
 
-        if self.mode == "socket":
+        if self.mode == PytanqueMode.SOCKET:
             self.socket.sendall(payload.encode())
             raw = self._read_socket_response(size)
-        elif self.mode == "stdio":
+        elif self.mode == PytanqueMode.STDIO:
             self._send_lsp_message(payload)
             raw = self._read_lsp_response()
-
+        elif self.mode == PytanqueMode.HTTP:
+            raw = self._send_request_message(payload)
         try:
             logger.info(f"Query Response: {raw}")
             resp = Response.from_json_string(raw)
@@ -424,6 +466,7 @@ class Pytanque:
             failure = Failure.from_json_string(raw)
             raise PetanqueError(failure.error.code, failure.error.message)
 
+    @send_request("petanque/start", StartResponse, is_session=True)
     def start(
         self,
         file: str,
@@ -468,11 +511,9 @@ class Pytanque:
         """
         path = os.path.abspath(file)
         uri = pathlib.Path(path).as_uri()
-        resp = self.query(StartParams(uri, thm, pre_commands, opts))
-        res = State.from_json(resp.result)
-        logger.info(f"Start success.")
-        return res
+        return StartParams(uri, thm, pre_commands, opts)
 
+    @send_request("petanque/setWorkspace", SetWorkspaceResponse)
     def set_workspace(
         self,
         debug: bool,
@@ -500,9 +541,9 @@ class Pytanque:
         """
         path = os.path.abspath(dir)
         uri = pathlib.Path(path).as_uri()
-        resp = self.query(SetWorkspaceParams(debug, uri))
-        logger.info(f"Set workspace success.")
+        return SetWorkspaceParams(debug, uri)
 
+    @send_request("petanque/run", RunResponse, is_session=True, continues_session=True)
     def run(
         self,
         state: State,
@@ -574,14 +615,10 @@ class Pytanque:
         """
         if timeout and cmd.endswith("."):
             cmd = f"Timeout {timeout} {cmd}"
-        resp = self.query(RunParams(state.st, cmd, opts))
-        res = State.from_json(resp.result)
-        logger.info(f"Run command {cmd}.")
-        if verbose:
-            for i, g in enumerate(self.goals(res)):
-                print(f"\nGoal {i}:\n{g.pp}\n")
-        return res
+        params = RunParams(state.st, cmd, opts)
+        return params
 
+    @send_request("petanque/goals", GoalsResponse)
     def goals(self, state: State, pretty: bool = True) -> list[Goal]:
         """
         Retrieve the current goals for a proof state.
@@ -616,29 +653,18 @@ class Pytanque:
         ...     for i, goal in enumerate(goals):
         ...         print(f"Goal {i}: {goal.pp}")
         """
-        resp = self.query(GoalsParams(state.st))
-        if not resp.result:
-            res = []
-        else:
-            res = GoalsResponse.from_json(resp.result).goals
-        logger.info(f"Current goals: {res}")
-        if pretty:
-            for g in res:
-                g.pp = pp_goal(g)
-        return res
+        params = GoalsParams(state.st)
+        return params
 
+    @send_request("petanque/goals", CompleteGoalsResponse)
     def complete_goals(self, state: State, pretty: bool = True) -> Any:
         """
         Return the complete goal information.
         """
-        resp = self.query(GoalsParams(state.st))
-        if not resp.result:
-            res = {}
-        else:
-            res = GoalsResponse.from_json(resp.result)
-        logger.info(f"Current complete goals: {res}")
-        return res
+        params = GoalsParams(state.st)
+        return params
 
+    @send_request("petanque/premises", PremisesResponse)
     def premises(self, state: State) -> Any:
         """
         Get the list of accessible premises (lemmas, definitions) for the current state.
@@ -665,11 +691,10 @@ class Pytanque:
         ...     premises = client.premises(state)
         ...     print(f"Available premises: {len(premises)}")
         """
-        resp = self.query(PremisesParams(state.st))
-        res = PremisesResponse.from_json(resp.result)
-        logger.info(f"Retrieved {len(res.value)} premises")
-        return res.value
+        params = PremisesParams(state.st)
+        return params
 
+    @send_request("petanque/state/eq", StateEqualResponse)
     def state_equal(self, st1: State, st2: State, kind: Inspect) -> bool:
         """
         Compare two proof states for equality.
@@ -705,11 +730,10 @@ class Pytanque:
         ...     goals_equal = client.state_equal(state1, state2, InspectGoals)
         """
         # Hack: JSON representation of variant without arg should be a list, e.g., ["Physical"]
-        resp = self.query(StateEqualParams([kind], st1.st, st2.st))
-        res = StateEqualResponse.from_json(resp.result)
-        logger.info(f"States equality {st1.st} = {st2.st} : {res.value}")
-        return res.value
+        params = StateEqualParams([kind], st1.st, st2.st)
+        return params
 
+    @send_request("petanque/state/hash", StateHashResponse)
     def state_hash(self, state: State) -> int:
         """
         Get a hash value for a proof state.
@@ -736,11 +760,10 @@ class Pytanque:
         ...     hash_value = client.state_hash(state)
         ...     print(f"State hash: {hash_value}")
         """
-        resp = self.query(StateHashParams(state.st))
-        res = StateHashResponse.from_json(resp.result)
-        logger.info(f"States hash {state.st} = {res.value}")
-        return res.value
-
+        params = StateHashParams(state.st)
+        return params
+    
+    @send_request("petanque/toc", TocResponse)
     def toc(self, file: str) -> list[tuple[str, List[TocElement]]]:
         """
         Get the table of contents (available definitions and theorems) for a Coq/Rocq file.
@@ -772,11 +795,10 @@ class Pytanque:
         """
         path = os.path.abspath(file)
         uri = pathlib.Path(path).as_uri()
-        resp = self.query(TocParams(uri))
-        res = TocResponse.from_json(resp.result)
-        logger.info(f"Retrieved TOC of {file}.")
-        return res.value
+        params = TocParams(uri)
+        return params
 
+    @send_request("petanque/ast", AstResponse)
     def ast(self, state: State, text: str) -> dict:
         """
         Get the Abstract Syntax Tree (AST) of a command parsed at a given state.
@@ -815,11 +837,10 @@ class Pytanque:
         ...     ast = client.ast(state, "fun x => x + 1.")
         ...     print("Expression AST:", ast)
         """
-        resp = self.query(AstParams(state.st, text))
-        res = resp.result["st"]
-        logger.info(f"AST of {text}")
-        return res
+        params = AstParams(state.st, text)
+        return params
 
+    @send_request("petanque/ast_at_pos", AstAtPosResponse)
     def ast_at_pos(
         self,
         file: str,
@@ -868,11 +889,10 @@ class Pytanque:
         path = os.path.abspath(file)
         uri = pathlib.Path(path).as_uri()
         pos = Position(line, character)
-        resp = self.query(AstAtPosParams(uri, pos))
-        res = resp.result
-        logger.info(f"AST at {pos.to_json_string()} in {uri}")
-        return res
+        params = AstAtPosParams(uri, pos)
+        return params
 
+    @send_request("petanque/get_state_at_pos", GetStateAtPosResponse, is_session=True)
     def get_state_at_pos(
         self, file: str, line: int, character: int, opts: Optional[Opts] = None
     ) -> State:
@@ -933,11 +953,10 @@ class Pytanque:
         path = os.path.abspath(file)
         uri = pathlib.Path(path).as_uri()
         pos = Position(line, character)
-        resp = self.query(GetStateAtPosParams(uri, pos, opts))
-        res = State.from_json(resp.result)
-        logger.info(f"Get state at {pos.to_json_string()} in {uri} success")
-        return res
+        params = GetStateAtPosParams(uri, pos, opts)
+        return params
 
+    @send_request("petanque/get_root_state", GetRootStateResponse, is_session=True)
     def get_root_state(self, file: str, opts: Optional[Opts] = None) -> State:
         """
         Get the initial (root) state of a document.
@@ -991,11 +1010,10 @@ class Pytanque:
         """
         path = os.path.abspath(file)
         uri = pathlib.Path(path).as_uri()
-        resp = self.query(GetRootStateParams(uri, opts))
-        res = State.from_json(resp.result)
-        logger.info(f"Get root state of {uri} success")
-        return res
+        params = GetRootStateParams(uri, opts)
+        return params
 
+    @send_request("petanque/list_notations_in_statement", ListNotationsInStatementResponse)
     def list_notations_in_statement(self, state: State, statement: str) -> list[dict]:
         """
         Get the list of notations appearing in a theorem/lemma statement.
@@ -1034,11 +1052,8 @@ class Pytanque:
         ...     notations = client.list_notations_in_statement(state, "Lemma foo: 2 * 1 + 0 / 1 = 2")
         ...     print(f"Found {len(notations)} notations")
         """
-        resp = self.query(ListNotationsParams(state.st, statement))
-        # res = resp.result["st"]
-        res = ListNotationsResponse.from_json(resp.result)
-        logger.info(f"List notations in the statement:\n{statement}.")
-        return res.st
+        params = ListNotationsParams(state.st, statement)
+        return params
 
     def __exit__(
         self,
