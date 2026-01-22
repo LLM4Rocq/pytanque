@@ -456,51 +456,6 @@ class TocElement:
 
 
 @dataclass
-class TocResponse:
-    """Original type: toc_response"""
-
-    value: List[Tuple[str, List[TocElement]]]
-
-    @classmethod
-    def from_json(cls, x: Any) -> "TocResponse":
-        return cls(
-            _atd_read_list(
-                (
-                    lambda x: (
-                        (
-                            _atd_read_string(x[0]),
-                            _atd_read_list(TocElement.from_json)(x[1]),
-                        )
-                        if isinstance(x, list) and len(x) == 2
-                        else _atd_bad_json("array of length 2", x)
-                    )
-                )
-            )(x)
-        )
-
-    def to_json(self) -> Any:
-        return _atd_write_list(
-            (
-                lambda x: (
-                    [
-                        _atd_write_string(x[0]),
-                        _atd_write_list((lambda x: x.to_json()))(x[1]),
-                    ]
-                    if isinstance(x, tuple) and len(x) == 2
-                    else _atd_bad_python("tuple of length 2", x)
-                )
-            )
-        )(self.value)
-
-    @classmethod
-    def from_json_string(cls, x: str) -> "TocResponse":
-        return cls.from_json(json.loads(x))
-
-    def to_json_string(self, **kw: Any) -> str:
-        return json.dumps(self.to_json(), **kw)
-
-
-@dataclass
 class TocParams:
     """Original type: toc_params = { ... }"""
 
@@ -533,27 +488,6 @@ class TocParams:
 
 
 @dataclass
-class StateHashResponse:
-    """Original type: state_hash_response"""
-
-    value: int
-
-    @classmethod
-    def from_json(cls, x: Any) -> "StateHashResponse":
-        return cls(_atd_read_int(x))
-
-    def to_json(self) -> Any:
-        return _atd_write_int(self.value)
-
-    @classmethod
-    def from_json_string(cls, x: str) -> "StateHashResponse":
-        return cls.from_json(json.loads(x))
-
-    def to_json_string(self, **kw: Any) -> str:
-        return json.dumps(self.to_json(), **kw)
-
-
-@dataclass
 class StateHashParams:
     """Original type: state_hash_params = { ... }"""
 
@@ -579,27 +513,6 @@ class StateHashParams:
 
     @classmethod
     def from_json_string(cls, x: str) -> "StateHashParams":
-        return cls.from_json(json.loads(x))
-
-    def to_json_string(self, **kw: Any) -> str:
-        return json.dumps(self.to_json(), **kw)
-
-
-@dataclass
-class StateEqualResponse:
-    """Original type: state_equal_response"""
-
-    value: bool
-
-    @classmethod
-    def from_json(cls, x: Any) -> "StateEqualResponse":
-        return cls(_atd_read_bool(x))
-
-    def to_json(self) -> Any:
-        return _atd_write_bool(self.value)
-
-    @classmethod
-    def from_json_string(cls, x: str) -> "StateEqualResponse":
         return cls.from_json(json.loads(x))
 
     def to_json_string(self, **kw: Any) -> str:
@@ -1038,27 +951,6 @@ class Request:
 
 
 @dataclass
-class PremisesResponse:
-    """Original type: premises_response"""
-
-    value: Any
-
-    @classmethod
-    def from_json(cls, x: Any) -> "PremisesResponse":
-        return cls((lambda x: x)(x))
-
-    def to_json(self) -> Any:
-        return (lambda x: x)(self.value)
-
-    @classmethod
-    def from_json_string(cls, x: str) -> "PremisesResponse":
-        return cls.from_json(json.loads(x))
-
-    def to_json_string(self, **kw: Any) -> str:
-        return json.dumps(self.to_json(), **kw)
-
-
-@dataclass
 class PremisesParams:
     """Original type: premises_params = { ... }"""
 
@@ -1151,38 +1043,6 @@ class NotationInfo:
 
 
 @dataclass
-class ListNotationsResponse:
-    """Original type: list_notations_response = { ... }"""
-
-    st: List[NotationInfo]
-
-    @classmethod
-    def from_json(cls, x: Any) -> "ListNotationsResponse":
-        if isinstance(x, dict):
-            return cls(
-                st=(
-                    _atd_read_list(NotationInfo.from_json)(x["st"])
-                    if "st" in x
-                    else _atd_missing_json_field("ListNotationsResponse", "st")
-                ),
-            )
-        else:
-            _atd_bad_json("ListNotationsResponse", x)
-
-    def to_json(self) -> Any:
-        res: Dict[str, Any] = {}
-        res["st"] = _atd_write_list((lambda x: x.to_json()))(self.st)
-        return res
-
-    @classmethod
-    def from_json_string(cls, x: str) -> "ListNotationsResponse":
-        return cls.from_json(json.loads(x))
-
-    def to_json_string(self, **kw: Any) -> str:
-        return json.dumps(self.to_json(), **kw)
-
-
-@dataclass
 class ListNotationsParams:
     """Original type: list_notations_params = { ... }"""
 
@@ -1215,6 +1075,38 @@ class ListNotationsParams:
 
     @classmethod
     def from_json_string(cls, x: str) -> "ListNotationsParams":
+        return cls.from_json(json.loads(x))
+
+    def to_json_string(self, **kw: Any) -> str:
+        return json.dumps(self.to_json(), **kw)
+
+
+@dataclass
+class GoalsParams:
+    """Original type: goals_params = { ... }"""
+
+    st: int
+
+    @classmethod
+    def from_json(cls, x: Any) -> "GoalsParams":
+        if isinstance(x, dict):
+            return cls(
+                st=(
+                    _atd_read_int(x["st"])
+                    if "st" in x
+                    else _atd_missing_json_field("GoalsParams", "st")
+                ),
+            )
+        else:
+            _atd_bad_json("GoalsParams", x)
+
+    def to_json(self) -> Any:
+        res: Dict[str, Any] = {}
+        res["st"] = _atd_write_int(self.st)
+        return res
+
+    @classmethod
+    def from_json_string(cls, x: str) -> "GoalsParams":
         return cls.from_json(json.loads(x))
 
     def to_json_string(self, **kw: Any) -> str:
@@ -1308,113 +1200,6 @@ class Goal:
 
     @classmethod
     def from_json_string(cls, x: str) -> "Goal":
-        return cls.from_json(json.loads(x))
-
-    def to_json_string(self, **kw: Any) -> str:
-        return json.dumps(self.to_json(), **kw)
-
-
-@dataclass
-class GoalsResponse:
-    """Original type: goals_response = { ... }"""
-
-    goals: List[Goal]
-    stack: List[Tuple[List[Any], List[Any]]]
-    shelf: List[Any]
-    given_up: List[Any]
-
-    @classmethod
-    def from_json(cls, x: Any) -> "GoalsResponse":
-        if isinstance(x, dict):
-            return cls(
-                goals=(
-                    _atd_read_list(Goal.from_json)(x["goals"])
-                    if "goals" in x
-                    else _atd_missing_json_field("GoalsResponse", "goals")
-                ),
-                stack=(
-                    _atd_read_list(
-                        (
-                            lambda x: (
-                                (
-                                    _atd_read_list((lambda x: x))(x[0]),
-                                    _atd_read_list((lambda x: x))(x[1]),
-                                )
-                                if isinstance(x, list) and len(x) == 2
-                                else _atd_bad_json("array of length 2", x)
-                            )
-                        )
-                    )(x["stack"])
-                    if "stack" in x
-                    else _atd_missing_json_field("GoalsResponse", "stack")
-                ),
-                shelf=(
-                    _atd_read_list((lambda x: x))(x["shelf"])
-                    if "shelf" in x
-                    else _atd_missing_json_field("GoalsResponse", "shelf")
-                ),
-                given_up=(
-                    _atd_read_list((lambda x: x))(x["given_up"])
-                    if "given_up" in x
-                    else _atd_missing_json_field("GoalsResponse", "given_up")
-                ),
-            )
-        else:
-            _atd_bad_json("GoalsResponse", x)
-
-    def to_json(self) -> Any:
-        res: Dict[str, Any] = {}
-        res["goals"] = _atd_write_list((lambda x: x.to_json()))(self.goals)
-        res["stack"] = _atd_write_list(
-            (
-                lambda x: (
-                    [
-                        _atd_write_list((lambda x: x))(x[0]),
-                        _atd_write_list((lambda x: x))(x[1]),
-                    ]
-                    if isinstance(x, tuple) and len(x) == 2
-                    else _atd_bad_python("tuple of length 2", x)
-                )
-            )
-        )(self.stack)
-        res["shelf"] = _atd_write_list((lambda x: x))(self.shelf)
-        res["given_up"] = _atd_write_list((lambda x: x))(self.given_up)
-        return res
-
-    @classmethod
-    def from_json_string(cls, x: str) -> "GoalsResponse":
-        return cls.from_json(json.loads(x))
-
-    def to_json_string(self, **kw: Any) -> str:
-        return json.dumps(self.to_json(), **kw)
-
-
-@dataclass
-class GoalsParams:
-    """Original type: goals_params = { ... }"""
-
-    st: int
-
-    @classmethod
-    def from_json(cls, x: Any) -> "GoalsParams":
-        if isinstance(x, dict):
-            return cls(
-                st=(
-                    _atd_read_int(x["st"])
-                    if "st" in x
-                    else _atd_missing_json_field("GoalsParams", "st")
-                ),
-            )
-        else:
-            _atd_bad_json("GoalsParams", x)
-
-    def to_json(self) -> Any:
-        res: Dict[str, Any] = {}
-        res["st"] = _atd_write_int(self.st)
-        return res
-
-    @classmethod
-    def from_json_string(cls, x: str) -> "GoalsParams":
         return cls.from_json(json.loads(x))
 
     def to_json_string(self, **kw: Any) -> str:
@@ -1572,6 +1357,287 @@ class Failure:
 
     @classmethod
     def from_json_string(cls, x: str) -> "Failure":
+        return cls.from_json(json.loads(x))
+
+    def to_json_string(self, **kw: Any) -> str:
+        return json.dumps(self.to_json(), **kw)
+
+
+@dataclass
+class BaseTocResponse:
+    """Original type: base_toc_response"""
+
+    value: List[Tuple[str, List[TocElement]]]
+
+    @classmethod
+    def from_json(cls, x: Any) -> "BaseTocResponse":
+        return cls(
+            _atd_read_list(
+                (
+                    lambda x: (
+                        (
+                            _atd_read_string(x[0]),
+                            _atd_read_list(TocElement.from_json)(x[1]),
+                        )
+                        if isinstance(x, list) and len(x) == 2
+                        else _atd_bad_json("array of length 2", x)
+                    )
+                )
+            )(x)
+        )
+
+    def to_json(self) -> Any:
+        return _atd_write_list(
+            (
+                lambda x: (
+                    [
+                        _atd_write_string(x[0]),
+                        _atd_write_list((lambda x: x.to_json()))(x[1]),
+                    ]
+                    if isinstance(x, tuple) and len(x) == 2
+                    else _atd_bad_python("tuple of length 2", x)
+                )
+            )
+        )(self.value)
+
+    @classmethod
+    def from_json_string(cls, x: str) -> "BaseTocResponse":
+        return cls.from_json(json.loads(x))
+
+    def to_json_string(self, **kw: Any) -> str:
+        return json.dumps(self.to_json(), **kw)
+
+
+@dataclass
+class BaseStateHashResponse:
+    """Original type: base_state_hash_response"""
+
+    value: int
+
+    @classmethod
+    def from_json(cls, x: Any) -> "BaseStateHashResponse":
+        return cls(_atd_read_int(x))
+
+    def to_json(self) -> Any:
+        return _atd_write_int(self.value)
+
+    @classmethod
+    def from_json_string(cls, x: str) -> "BaseStateHashResponse":
+        return cls.from_json(json.loads(x))
+
+    def to_json_string(self, **kw: Any) -> str:
+        return json.dumps(self.to_json(), **kw)
+
+
+@dataclass
+class BaseStateEqualResponse:
+    """Original type: base_state_equal_response"""
+
+    value: bool
+
+    @classmethod
+    def from_json(cls, x: Any) -> "BaseStateEqualResponse":
+        return cls(_atd_read_bool(x))
+
+    def to_json(self) -> Any:
+        return _atd_write_bool(self.value)
+
+    @classmethod
+    def from_json_string(cls, x: str) -> "BaseStateEqualResponse":
+        return cls.from_json(json.loads(x))
+
+    def to_json_string(self, **kw: Any) -> str:
+        return json.dumps(self.to_json(), **kw)
+
+
+@dataclass
+class BasePremisesResponse:
+    """Original type: base_premises_response"""
+
+    value: Any
+
+    @classmethod
+    def from_json(cls, x: Any) -> "BasePremisesResponse":
+        return cls((lambda x: x)(x))
+
+    def to_json(self) -> Any:
+        return (lambda x: x)(self.value)
+
+    @classmethod
+    def from_json_string(cls, x: str) -> "BasePremisesResponse":
+        return cls.from_json(json.loads(x))
+
+    def to_json_string(self, **kw: Any) -> str:
+        return json.dumps(self.to_json(), **kw)
+
+
+@dataclass
+class BaseListNotationsInStatementResponse:
+    """Original type: base_list_notations_in_statement_response = { ... }"""
+
+    st: List[NotationInfo]
+
+    @classmethod
+    def from_json(cls, x: Any) -> "BaseListNotationsInStatementResponse":
+        if isinstance(x, dict):
+            return cls(
+                st=(
+                    _atd_read_list(NotationInfo.from_json)(x["st"])
+                    if "st" in x
+                    else _atd_missing_json_field(
+                        "BaseListNotationsInStatementResponse", "st"
+                    )
+                ),
+            )
+        else:
+            _atd_bad_json("BaseListNotationsInStatementResponse", x)
+
+    def to_json(self) -> Any:
+        res: Dict[str, Any] = {}
+        res["st"] = _atd_write_list((lambda x: x.to_json()))(self.st)
+        return res
+
+    @classmethod
+    def from_json_string(cls, x: str) -> "BaseListNotationsInStatementResponse":
+        return cls.from_json(json.loads(x))
+
+    def to_json_string(self, **kw: Any) -> str:
+        return json.dumps(self.to_json(), **kw)
+
+
+@dataclass
+class BaseGoalsResponse:
+    """Original type: base_goals_response = { ... }"""
+
+    goals: List[Goal]
+    stack: List[Tuple[List[Any], List[Any]]]
+    shelf: List[Any]
+    given_up: List[Any]
+
+    @classmethod
+    def from_json(cls, x: Any) -> "BaseGoalsResponse":
+        if isinstance(x, dict):
+            return cls(
+                goals=(
+                    _atd_read_list(Goal.from_json)(x["goals"])
+                    if "goals" in x
+                    else _atd_missing_json_field("BaseGoalsResponse", "goals")
+                ),
+                stack=(
+                    _atd_read_list(
+                        (
+                            lambda x: (
+                                (
+                                    _atd_read_list((lambda x: x))(x[0]),
+                                    _atd_read_list((lambda x: x))(x[1]),
+                                )
+                                if isinstance(x, list) and len(x) == 2
+                                else _atd_bad_json("array of length 2", x)
+                            )
+                        )
+                    )(x["stack"])
+                    if "stack" in x
+                    else _atd_missing_json_field("BaseGoalsResponse", "stack")
+                ),
+                shelf=(
+                    _atd_read_list((lambda x: x))(x["shelf"])
+                    if "shelf" in x
+                    else _atd_missing_json_field("BaseGoalsResponse", "shelf")
+                ),
+                given_up=(
+                    _atd_read_list((lambda x: x))(x["given_up"])
+                    if "given_up" in x
+                    else _atd_missing_json_field("BaseGoalsResponse", "given_up")
+                ),
+            )
+        else:
+            _atd_bad_json("BaseGoalsResponse", x)
+
+    def to_json(self) -> Any:
+        res: Dict[str, Any] = {}
+        res["goals"] = _atd_write_list((lambda x: x.to_json()))(self.goals)
+        res["stack"] = _atd_write_list(
+            (
+                lambda x: (
+                    [
+                        _atd_write_list((lambda x: x))(x[0]),
+                        _atd_write_list((lambda x: x))(x[1]),
+                    ]
+                    if isinstance(x, tuple) and len(x) == 2
+                    else _atd_bad_python("tuple of length 2", x)
+                )
+            )
+        )(self.stack)
+        res["shelf"] = _atd_write_list((lambda x: x))(self.shelf)
+        res["given_up"] = _atd_write_list((lambda x: x))(self.given_up)
+        return res
+
+    @classmethod
+    def from_json_string(cls, x: str) -> "BaseGoalsResponse":
+        return cls.from_json(json.loads(x))
+
+    def to_json_string(self, **kw: Any) -> str:
+        return json.dumps(self.to_json(), **kw)
+
+
+@dataclass
+class BaseAstResponse:
+    """Original type: base_ast_response = { ... }"""
+
+    result: Any
+
+    @classmethod
+    def from_json(cls, x: Any) -> "BaseAstResponse":
+        if isinstance(x, dict):
+            return cls(
+                result=(
+                    (lambda x: x)(x["result"])
+                    if "result" in x
+                    else _atd_missing_json_field("BaseAstResponse", "result")
+                ),
+            )
+        else:
+            _atd_bad_json("BaseAstResponse", x)
+
+    def to_json(self) -> Any:
+        res: Dict[str, Any] = {}
+        res["result"] = (lambda x: x)(self.result)
+        return res
+
+    @classmethod
+    def from_json_string(cls, x: str) -> "BaseAstResponse":
+        return cls.from_json(json.loads(x))
+
+    def to_json_string(self, **kw: Any) -> str:
+        return json.dumps(self.to_json(), **kw)
+
+
+@dataclass
+class BaseAstAtPosResponse:
+    """Original type: base_ast_at_pos_response = { ... }"""
+
+    result: Any
+
+    @classmethod
+    def from_json(cls, x: Any) -> "BaseAstAtPosResponse":
+        if isinstance(x, dict):
+            return cls(
+                result=(
+                    (lambda x: x)(x["result"])
+                    if "result" in x
+                    else _atd_missing_json_field("BaseAstAtPosResponse", "result")
+                ),
+            )
+        else:
+            _atd_bad_json("BaseAstAtPosResponse", x)
+
+    def to_json(self) -> Any:
+        res: Dict[str, Any] = {}
+        res["result"] = (lambda x: x)(self.result)
+        return res
+
+    @classmethod
+    def from_json_string(cls, x: str) -> "BaseAstAtPosResponse":
         return cls.from_json(json.loads(x))
 
     def to_json_string(self, **kw: Any) -> str:
