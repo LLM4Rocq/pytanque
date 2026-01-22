@@ -250,11 +250,17 @@ class Pytanque:
             self.host = None
             self.port = None
             self.socket = None
-        elif host is not None and port is not None:
-            self.mode = mode
+        elif mode == PytanqueMode.SOCKET:
+            self.mode = PytanqueMode.SOCKET
             self.host = host
             self.port = port
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.process = None
+        elif mode == PytanqueMode.HTTP:
+            self.mode = PytanqueMode.HTTP
+            self.host = None
+            self.port = None
+            self.socket = None
             self.process = None
         else:
             raise ValueError(
