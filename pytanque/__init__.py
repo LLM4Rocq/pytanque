@@ -22,7 +22,7 @@ from .protocol import (
     AstAtPosParams,
     GetStateAtPosParams,
     GetRootStateParams,
-    ListNotationsParams,
+    ListNotationsInStatementParams,
 )
 
 from .response import (
@@ -72,6 +72,6 @@ __all__ = [
     "AstAtPosParams",
     "GetStateAtPosParams",
     "GetRootStateParams",
-    "ListNotationsParams",
-    "ListNotationsResponse",
+    "ListNotationsInParams",
+    "ListNotationsInResponse",
 ]
