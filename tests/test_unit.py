@@ -9,7 +9,8 @@ from pathlib import Path
 
 from pytanque import Pytanque, PetanqueError, InspectPhysical, InspectGoals
 from pytanque.protocol import StartParams
-
+from pytanque.response import GoalsResponse
+from pytanque.routes import RouteName
 
 class TestPytanqueConstructor:
     """Test constructor examples from docstrings."""
@@ -57,7 +58,7 @@ class TestQueryMethod:
             # Use StartParams as in the example
             uri = Path("./examples/foo.v").resolve().as_uri()
             params = StartParams(uri, "addnC")
-            response = client.query(params)
+            response = client.query(RouteName.START, params)
             assert response.id is not None
             assert response.result is not None
         finally:
@@ -342,7 +343,24 @@ class TestPositionBasedMethods:
             print(f"Root state: {root_state.st}")
             assert root_state.st is not None
 
+class TestCompleteGoals:
+    """Test complete_goals functionality."""
 
+    def test_complete_goals_start(self, server_config, example_files, petanque_server):
+        """Test complete goals at the beginning of a proof."""
+        with Pytanque("127.0.0.1", 8765) as client:
+            state = client.start("./examples/foo.v", "addnAC")
+            complete_goals = client.complete_goals(state, pretty=True)
+            GoalsResponse.from_json(complete_goals.to_json())
+
+    def test_complete_goals_end(self, server_config, example_files, petanque_server):
+        """Test complete goals at the end of a proof."""
+        with Pytanque("127.0.0.1", 8765) as client:
+            state = client.start("./examples/foo.v", "addnC")
+            state = client.run(state, "by elim: n => //= ? ->.")
+            complete_goals = client.complete_goals(state, pretty=True)
+            GoalsResponse.from_json(complete_goals.to_json())
+  
 if __name__ == "__main__":
     # Allow running the test file directly
     pytest.main([__file__, "-v", "--tb=short"])
