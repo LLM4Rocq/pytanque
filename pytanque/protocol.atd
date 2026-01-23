@@ -40,7 +40,7 @@ type start_params = {
 
 type run_params = {
     ?opts: opts option;
-    st: int;
+    st: state;
     tac: string;
 }
 
@@ -48,11 +48,11 @@ type state = {
     st: int;
     ?hash: int option;
     proof_finished: bool;
-    feedback: (int * string) list
+    feedback: (int * string) list;
 }
 
 type goals_params = {
-    st: int;
+    st: state;
 }
 
 type goal_hyp = {
@@ -76,7 +76,7 @@ type base_goals_response = {
 }
 
 type premises_params = {
-    st: int;
+    st: state;
 }
 
 type base_premises_response = abstract
@@ -96,14 +96,14 @@ type inspect = [
 
 type state_equal_params = {
     kind: inspect list;
-    st1: int;
-    st2: int;
+    st1: state;
+    st2: state;
 }
 
 type base_state_equal_response = bool
 
 type state_hash_params = {
-    st: int;
+    st: state;
 }
 
 type base_state_hash_response = int
@@ -138,7 +138,7 @@ type toc_element = {
 type base_toc_response = (string * toc_element list) list
 
 type ast_params = {
-    st: int;
+    st: state;
     text: string;
 }
 
@@ -167,7 +167,7 @@ type notation_info = {
 }
 
 type list_notations_params = {
-    st: int;
+    st: state;
     statement: string;
 }
 
