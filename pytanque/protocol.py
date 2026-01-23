@@ -1043,29 +1043,31 @@ class NotationInfo:
 
 
 @dataclass
-class ListNotationsParams:
-    """Original type: list_notations_params = { ... }"""
+class ListNotationsInStatementParams:
+    """Original type: list_notations_in_statement_params = { ... }"""
 
     st: State
     statement: str
 
     @classmethod
-    def from_json(cls, x: Any) -> "ListNotationsParams":
+    def from_json(cls, x: Any) -> "ListNotationsInStatementParams":
         if isinstance(x, dict):
             return cls(
                 st=(
                     State.from_json(x["st"])
                     if "st" in x
-                    else _atd_missing_json_field("ListNotationsParams", "st")
+                    else _atd_missing_json_field("ListNotationsInStatementParams", "st")
                 ),
                 statement=(
                     _atd_read_string(x["statement"])
                     if "statement" in x
-                    else _atd_missing_json_field("ListNotationsParams", "statement")
+                    else _atd_missing_json_field(
+                        "ListNotationsInStatementParams", "statement"
+                    )
                 ),
             )
         else:
-            _atd_bad_json("ListNotationsParams", x)
+            _atd_bad_json("ListNotationsInStatementParams", x)
 
     def to_json(self) -> Any:
         res: Dict[str, Any] = {}
@@ -1074,7 +1076,7 @@ class ListNotationsParams:
         return res
 
     @classmethod
-    def from_json_string(cls, x: str) -> "ListNotationsParams":
+    def from_json_string(cls, x: str) -> "ListNotationsInStatementParams":
         return cls.from_json(json.loads(x))
 
     def to_json_string(self, **kw: Any) -> str:

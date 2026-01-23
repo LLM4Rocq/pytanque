@@ -166,7 +166,7 @@ type notation_info = {
     scope: string nullable;
 }
 
-type list_notations_params = {
+type list_notations_in_statement_params = {
     st: state;
     statement: string;
 }
