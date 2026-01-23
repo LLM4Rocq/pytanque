@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from enum import StrEnum, unique
 from typing import Union
 
-from .protocol import (
+from .params import (
     StartParams,
     RunParams,
     GoalsParams,

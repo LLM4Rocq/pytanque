@@ -4,16 +4,18 @@ from .protocol import (
     Response,
     Failure,
     Position,
-    StartParams,
     Opts,
-    RunParams,
-    GoalsParams,
-    PremisesParams,
     State,
     Goal,
     Inspect,
     InspectPhysical,
-    InspectGoals,
+    InspectGoals
+)
+
+from .params import (
+    RunParams,
+    GoalsParams,
+    PremisesParams,
     StateEqualParams,
     StateHashParams,
     SetWorkspaceParams,
@@ -23,6 +25,7 @@ from .protocol import (
     GetStateAtPosParams,
     GetRootStateParams,
     ListNotationsInStatementParams,
+    StartParams
 )
 
 from .response import (
