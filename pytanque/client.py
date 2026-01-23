@@ -80,6 +80,24 @@ Params = Union[
     AstAtPosParams,
 ]
 
+Responses = Union[
+    AstResponse,
+    AstAtPosResponse,
+    BaseResponse,
+    CompleteGoalsResponse,
+    GetRootStateResponse,
+    GetStateAtPosResponse,
+    GoalsResponse,
+    ListNotationsInStatementResponse,
+    PremisesResponse,
+    RunResponse,
+    SetWorkspaceResponse,
+    StartResponse,
+    StateEqualResponse,
+    StateHashResponse,
+    TocResponse
+]
+
 logger = logging.getLogger(__name__)
 
 
@@ -130,22 +148,24 @@ def mk_request(id: int, params: Params, route: str, project_state=True) -> Reque
                 params_json[f.name] = params_json[f.name]['st']
     return Request(id, route, params_json)
 
-def send_request(route: str, response_cls:BaseResponse, is_session=False, continues_session=False):
+def send_request(route: str, response_cls:type[BaseResponse], is_session=False, parent: str='', cmd: str=''):
     """
     Send the return parameters to `mk_request` through the given route.
     """
     def decorator(fn):
         @functools.wraps(fn)
         def wrapper(self: Pytanque, *args, **kwargs):
+            timeout = kwargs.pop("timeout", None)
             params = fn(self, *args, **kwargs)
-            res = self.query(params, route)
+            res = self.query(params, route, timeout=timeout)
             return response_cls.extract_response(res)
         wrapper.__send_request__ = route
         wrapper.__is_session__ = is_session
-        wrapper.__continues_session = continues_session
-        if continues_session and not is_session:
-            raise PetanqueError(f"is_session is set to False in the send_request decorator for {fn.__name__},\
-                                 while continue_session is set to True.")
+        wrapper.__parent_node__ = parent
+        wrapper.__request_cmd__ = cmd
+        if cmd and not is_session:
+            raise PetanqueError(-32603, f"is_session is set to False in the send_request decorator\
+                                 for {fn.__name__}, while `tac` is given.")
         return wrapper
     return decorator
 
@@ -250,21 +270,22 @@ class Pytanque:
             self.host = None
             self.port = None
             self.socket = None
-        elif mode == PytanqueMode.SOCKET:
-            self.mode = PytanqueMode.SOCKET
-            self.host = host
-            self.port = port
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.process = None
-        elif mode == PytanqueMode.HTTP:
-            self.mode = PytanqueMode.HTTP
-            self.host = None
-            self.port = None
-            self.socket = None
-            self.process = None
+        elif host is not None and port is not None:
+            if mode == PytanqueMode.SOCKET:
+                self.mode = PytanqueMode.SOCKET
+                self.host = host
+                self.port = port
+                self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.process = None
+            elif mode == PytanqueMode.HTTP:
+                self.mode = PytanqueMode.HTTP
+                self.host = None
+                self.port = None
+                self.socket = None
+                self.process = None
         else:
             raise ValueError(
-                "Must specify either (host, port) for socket mode or stdio=True for stdio mode"
+                "Must specify either (host, port) for socket/http mode or mode=PytanqueMode.STDIO for stdio mode"
             )
 
         self.id = 0
@@ -352,12 +373,15 @@ class Pytanque:
                 break
         return "".join(fragments)
 
-    def _send_request_message(self, payload: Any) -> None:
+    def _send_request_message(self, payload: Any, timeout: Optional[float]=None) -> None:
         url = f"http://{self.host}:{self.port}"
+        if timeout:
+            payload['timeout'] = timeout
         response = requests.post(
             url,
             data=payload,
-            headers={"Content-Type": "application/json"}
+            headers={"Content-Type": "application/json"},
+            timeout=timeout
         )
         try:
             _ = response.json()
@@ -410,7 +434,7 @@ class Pytanque:
 
             return json_content
 
-    def query(self, params: Params, route: str, size: int = 4096) -> Response:
+    def query(self, params: Params, route: str, size: int = 4096, timeout: Optional[float] = None) -> Response:
         """
         Send a low-level JSON-RPC query to the server or subprocess.
 
@@ -453,13 +477,22 @@ class Pytanque:
         logger.info(f"Query Payload: {payload}")
 
         if self.mode == PytanqueMode.SOCKET:
-            self.socket.sendall(payload.encode())
-            raw = self._read_socket_response(size)
+            #TODO: Improve timeout precision
+            self.socket.settimeout(timeout)
+            try:
+                self.socket.sendall(payload.encode())
+                raw = self._read_socket_response(size)
+            except TimeoutError:
+                raise PetanqueError(
+                    -33000, f"Timeout on {self.id}"
+                )
         elif self.mode == PytanqueMode.STDIO:
+            if timeout:
+                logging.warning("Timeout not supported on Stdio mode.")
             self._send_lsp_message(payload)
             raw = self._read_lsp_response()
         elif self.mode == PytanqueMode.HTTP:
-            raw = self._send_request_message(payload)
+            raw = self._send_request_message(payload, timeout)
         try:
             logger.info(f"Query Response: {raw}")
             resp = Response.from_json_string(raw)
@@ -549,7 +582,7 @@ class Pytanque:
         uri = pathlib.Path(path).as_uri()
         return SetWorkspaceParams(debug, uri)
 
-    @send_request("petanque/run", RunResponse, is_session=True, continues_session=True)
+    @send_request("petanque/run", RunResponse, is_session=True, parent="state", cmd="tac")
     def run(
         self,
         state: State,
@@ -621,7 +654,7 @@ class Pytanque:
         """
         if timeout and cmd.endswith("."):
             cmd = f"Timeout {timeout} {cmd}"
-        params = RunParams(state.st, cmd, opts)
+        params = RunParams(state, cmd, opts)
         return params
 
     @send_request("petanque/goals", GoalsResponse)
@@ -659,7 +692,7 @@ class Pytanque:
         ...     for i, goal in enumerate(goals):
         ...         print(f"Goal {i}: {goal.pp}")
         """
-        params = GoalsParams(state.st)
+        params = GoalsParams(state)
         return params
 
     @send_request("petanque/goals", CompleteGoalsResponse)
@@ -667,7 +700,7 @@ class Pytanque:
         """
         Return the complete goal information.
         """
-        params = GoalsParams(state.st)
+        params = GoalsParams(state)
         return params
 
     @send_request("petanque/premises", PremisesResponse)
@@ -697,7 +730,7 @@ class Pytanque:
         ...     premises = client.premises(state)
         ...     print(f"Available premises: {len(premises)}")
         """
-        params = PremisesParams(state.st)
+        params = PremisesParams(state)
         return params
 
     @send_request("petanque/state/eq", StateEqualResponse)
@@ -736,7 +769,7 @@ class Pytanque:
         ...     goals_equal = client.state_equal(state1, state2, InspectGoals)
         """
         # Hack: JSON representation of variant without arg should be a list, e.g., ["Physical"]
-        params = StateEqualParams([kind], st1.st, st2.st)
+        params = StateEqualParams([kind], st1, st2)
         return params
 
     @send_request("petanque/state/hash", StateHashResponse)
@@ -766,7 +799,7 @@ class Pytanque:
         ...     hash_value = client.state_hash(state)
         ...     print(f"State hash: {hash_value}")
         """
-        params = StateHashParams(state.st)
+        params = StateHashParams(state)
         return params
     
     @send_request("petanque/toc", TocResponse)
@@ -843,7 +876,7 @@ class Pytanque:
         ...     ast = client.ast(state, "fun x => x + 1.")
         ...     print("Expression AST:", ast)
         """
-        params = AstParams(state.st, text)
+        params = AstParams(state, text)
         return params
 
     @send_request("petanque/ast_at_pos", AstAtPosResponse)
@@ -1058,7 +1091,7 @@ class Pytanque:
         ...     notations = client.list_notations_in_statement(state, "Lemma foo: 2 * 1 + 0 / 1 = 2")
         ...     print(f"Found {len(notations)} notations")
         """
-        params = ListNotationsParams(state.st, statement)
+        params = ListNotationsParams(state, statement)
         return params
 
     def __exit__(
