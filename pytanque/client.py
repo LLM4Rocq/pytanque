@@ -20,83 +20,35 @@ from typing import (
 import requests
 from typing_extensions import Self
 from types import TracebackType
+from .routes import PETANQUE_ROUTES, Params, RouteName
 from .protocol import (
+    StartParams,
+    RunParams,
+    GoalsParams,
+    PremisesParams,
+    StateEqualParams,
+    StateHashParams,
+    SetWorkspaceParams,
+    TocParams,
+    AstParams,
+    AstAtPosParams,
+    GetStateAtPosParams,
+    GetRootStateParams,
+    ListNotationsInStatementParams,
+)
+from .protocol import (
+    Inspect,
+    InspectGoals,
+    InspectPhysical,
+    State,
     Request,
+    Goal,
     Response,
     Failure,
-    Position,
-    StartParams,
     Opts,
-    RunParams,
-    GoalsParams,
-    PremisesParams,
-    State,
-    Goal,
-    Inspect,
-    InspectPhysical,
-    InspectGoals,
-    StateEqualParams,
-    StateHashParams,
-    SetWorkspaceParams,
-    TocParams,
-    TocElement,
-    AstParams,
-    AstAtPosParams,
-    GetStateAtPosParams,
-    GetRootStateParams,
-    ListNotationsParams,
+    Position,
+    TocElement
 )
-
-from .response import (
-    AstResponse,
-    AstAtPosResponse,
-    BaseResponse,
-    CompleteGoalsResponse,
-    GetRootStateResponse,
-    GetStateAtPosResponse,
-    GoalsResponse,
-    ListNotationsInStatementResponse,
-    PremisesResponse,
-    RunResponse,
-    SetWorkspaceResponse,
-    StartResponse,
-    StateEqualResponse,
-    StateHashResponse,
-    TocResponse,
-)
-Params = Union[
-    ListNotationsParams,
-    StartParams,
-    GetStateAtPosParams,
-    GetRootStateParams,
-    RunParams,
-    GoalsParams,
-    PremisesParams,
-    StateEqualParams,
-    StateHashParams,
-    SetWorkspaceParams,
-    TocParams,
-    AstParams,
-    AstAtPosParams,
-]
-
-Responses = Union[
-    AstResponse,
-    AstAtPosResponse,
-    BaseResponse,
-    CompleteGoalsResponse,
-    GetRootStateResponse,
-    GetStateAtPosResponse,
-    GoalsResponse,
-    ListNotationsInStatementResponse,
-    PremisesResponse,
-    RunResponse,
-    SetWorkspaceResponse,
-    StartResponse,
-    StateEqualResponse,
-    StateHashResponse,
-    TocResponse
-]
 
 logger = logging.getLogger(__name__)
 
@@ -148,7 +100,7 @@ def mk_request(id: int, params: Params, route: str, project_state=True) -> Reque
                 params_json[f.name] = params_json[f.name]['st']
     return Request(id, route, params_json)
 
-def send_request(route: str, response_cls:type[BaseResponse], is_session=False, parent: str='', cmd: str=''):
+def send_request(route: RouteName, is_session=False, is_primitive=False):
     """
     Send the return parameters to `mk_request` through the given route.
     """
@@ -157,15 +109,15 @@ def send_request(route: str, response_cls:type[BaseResponse], is_session=False, 
         def wrapper(self: Pytanque, *args, **kwargs):
             timeout = kwargs.pop("timeout", None)
             params = fn(self, *args, **kwargs)
-            res = self.query(params, route, timeout=timeout)
-            return response_cls.extract_response(res)
+            resp = self.query(route, params, timeout=timeout)
+            resp_cls = PETANQUE_ROUTES[route].response
+            return resp_cls.extract_response(resp)
         wrapper.__send_request__ = route
         wrapper.__is_session__ = is_session
-        wrapper.__parent_node__ = parent
-        wrapper.__request_cmd__ = cmd
-        if cmd and not is_session:
-            raise PetanqueError(-32603, f"is_session is set to False in the send_request decorator\
-                                 for {fn.__name__}, while `tac` is given.")
+        wrapper.__is_primitive__ = is_primitive
+        if is_primitive and not is_session:
+            raise PetanqueError(-32603, f"`is_session` is set to False in the send_request decorator\
+                                 for {fn.__name__}, while `is_primitive` is set to True")
         return wrapper
     return decorator
 
@@ -434,7 +386,7 @@ class Pytanque:
 
             return json_content
 
-    def query(self, params: Params, route: str, size: int = 4096, timeout: Optional[float] = None) -> Response:
+    def query(self, route: RouteName, params: Params, size: int = 4096, timeout: Optional[float] = None) -> Response:
         """
         Send a low-level JSON-RPC query to the server or subprocess.
 
@@ -505,7 +457,7 @@ class Pytanque:
             failure = Failure.from_json_string(raw)
             raise PetanqueError(failure.error.code, failure.error.message)
 
-    @send_request("petanque/start", StartResponse, is_session=True)
+    @send_request(RouteName.START, is_session=True, is_primitive=True)
     def start(
         self,
         file: str,
@@ -552,7 +504,7 @@ class Pytanque:
         uri = pathlib.Path(path).as_uri()
         return StartParams(uri, thm, pre_commands, opts)
 
-    @send_request("petanque/setWorkspace", SetWorkspaceResponse)
+    @send_request(RouteName.SET_WORKSPACE, is_session=True)
     def set_workspace(
         self,
         debug: bool,
@@ -582,7 +534,7 @@ class Pytanque:
         uri = pathlib.Path(path).as_uri()
         return SetWorkspaceParams(debug, uri)
 
-    @send_request("petanque/run", RunResponse, is_session=True, parent="state", cmd="tac")
+    @send_request(RouteName.RUN, is_session=True)
     def run(
         self,
         state: State,
@@ -657,7 +609,7 @@ class Pytanque:
         params = RunParams(state, cmd, opts)
         return params
 
-    @send_request("petanque/goals", GoalsResponse)
+    @send_request(RouteName.GOALS)
     def goals(self, state: State, pretty: bool = True) -> list[Goal]:
         """
         Retrieve the current goals for a proof state.
@@ -695,7 +647,7 @@ class Pytanque:
         params = GoalsParams(state)
         return params
 
-    @send_request("petanque/goals", CompleteGoalsResponse)
+    # @send_request(RouteName.COMPLETE_GOALS)
     def complete_goals(self, state: State, pretty: bool = True) -> Any:
         """
         Return the complete goal information.
@@ -703,7 +655,7 @@ class Pytanque:
         params = GoalsParams(state)
         return params
 
-    @send_request("petanque/premises", PremisesResponse)
+    @send_request(RouteName.PREMISES)
     def premises(self, state: State) -> Any:
         """
         Get the list of accessible premises (lemmas, definitions) for the current state.
@@ -733,7 +685,7 @@ class Pytanque:
         params = PremisesParams(state)
         return params
 
-    @send_request("petanque/state/eq", StateEqualResponse)
+    @send_request(RouteName.STATE_EQUAL)
     def state_equal(self, st1: State, st2: State, kind: Inspect) -> bool:
         """
         Compare two proof states for equality.
@@ -772,7 +724,7 @@ class Pytanque:
         params = StateEqualParams([kind], st1, st2)
         return params
 
-    @send_request("petanque/state/hash", StateHashResponse)
+    @send_request(RouteName.STATE_HASH)
     def state_hash(self, state: State) -> int:
         """
         Get a hash value for a proof state.
@@ -802,7 +754,7 @@ class Pytanque:
         params = StateHashParams(state)
         return params
     
-    @send_request("petanque/toc", TocResponse)
+    @send_request(RouteName.TOC)
     def toc(self, file: str) -> list[tuple[str, List[TocElement]]]:
         """
         Get the table of contents (available definitions and theorems) for a Coq/Rocq file.
@@ -837,7 +789,7 @@ class Pytanque:
         params = TocParams(uri)
         return params
 
-    @send_request("petanque/ast", AstResponse)
+    @send_request(RouteName.AST)
     def ast(self, state: State, text: str) -> dict:
         """
         Get the Abstract Syntax Tree (AST) of a command parsed at a given state.
@@ -879,7 +831,7 @@ class Pytanque:
         params = AstParams(state, text)
         return params
 
-    @send_request("petanque/ast_at_pos", AstAtPosResponse)
+    @send_request(RouteName.AST_AT_POS)
     def ast_at_pos(
         self,
         file: str,
@@ -931,7 +883,7 @@ class Pytanque:
         params = AstAtPosParams(uri, pos)
         return params
 
-    @send_request("petanque/get_state_at_pos", GetStateAtPosResponse, is_session=True)
+    @send_request(RouteName.GET_STATE_AT_POS)
     def get_state_at_pos(
         self, file: str, line: int, character: int, opts: Optional[Opts] = None
     ) -> State:
@@ -995,7 +947,7 @@ class Pytanque:
         params = GetStateAtPosParams(uri, pos, opts)
         return params
 
-    @send_request("petanque/get_root_state", GetRootStateResponse, is_session=True)
+    @send_request(RouteName.GET_ROOT_STATE)
     def get_root_state(self, file: str, opts: Optional[Opts] = None) -> State:
         """
         Get the initial (root) state of a document.
@@ -1052,7 +1004,7 @@ class Pytanque:
         params = GetRootStateParams(uri, opts)
         return params
 
-    @send_request("petanque/list_notations_in_statement", ListNotationsInStatementResponse)
+    @send_request(RouteName.LIST_NOTATIONS_IN_STATEMENTS)
     def list_notations_in_statement(self, state: State, statement: str) -> list[dict]:
         """
         Get the list of notations appearing in a theorem/lemma statement.
@@ -1091,7 +1043,7 @@ class Pytanque:
         ...     notations = client.list_notations_in_statement(state, "Lemma foo: 2 * 1 + 0 / 1 = 2")
         ...     print(f"Found {len(notations)} notations")
         """
-        params = ListNotationsParams(state, statement)
+        params = ListNotationsInStatementParams(state, statement)
         return params
 
     def __exit__(
