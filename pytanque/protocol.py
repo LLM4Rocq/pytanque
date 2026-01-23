@@ -1138,6 +1138,27 @@ class BaseStateEqualParams:
 
 
 @dataclass
+class BaseStartResponse:
+    """Original type: base_start_response"""
+
+    value: State
+
+    @classmethod
+    def from_json(cls, x: Any) -> "BaseStartResponse":
+        return cls(State.from_json(x))
+
+    def to_json(self) -> Any:
+        return (lambda x: x.to_json())(self.value)
+
+    @classmethod
+    def from_json_string(cls, x: str) -> "BaseStartResponse":
+        return cls.from_json(json.loads(x))
+
+    def to_json_string(self, **kw: Any) -> str:
+        return json.dumps(self.to_json(), **kw)
+
+
+@dataclass
 class BaseStartParams:
     """Original type: base_start_params = { ... }"""
 
@@ -1187,6 +1208,27 @@ class BaseStartParams:
 
 
 @dataclass
+class BaseSetWorkspaceResponse:
+    """Original type: base_set_workspace_response"""
+
+    value: Any
+
+    @classmethod
+    def from_json(cls, x: Any) -> "BaseSetWorkspaceResponse":
+        return cls((lambda x: x)(x))
+
+    def to_json(self) -> Any:
+        return (lambda x: x)(self.value)
+
+    @classmethod
+    def from_json_string(cls, x: str) -> "BaseSetWorkspaceResponse":
+        return cls.from_json(json.loads(x))
+
+    def to_json_string(self, **kw: Any) -> str:
+        return json.dumps(self.to_json(), **kw)
+
+
+@dataclass
 class BaseSetWorkspaceParams:
     """Original type: base_set_workspace_params = { ... }"""
 
@@ -1219,6 +1261,27 @@ class BaseSetWorkspaceParams:
 
     @classmethod
     def from_json_string(cls, x: str) -> "BaseSetWorkspaceParams":
+        return cls.from_json(json.loads(x))
+
+    def to_json_string(self, **kw: Any) -> str:
+        return json.dumps(self.to_json(), **kw)
+
+
+@dataclass
+class BaseRunResponse:
+    """Original type: base_run_response"""
+
+    value: State
+
+    @classmethod
+    def from_json(cls, x: Any) -> "BaseRunResponse":
+        return cls(State.from_json(x))
+
+    def to_json(self) -> Any:
+        return (lambda x: x.to_json())(self.value)
+
+    @classmethod
+    def from_json_string(cls, x: str) -> "BaseRunResponse":
         return cls.from_json(json.loads(x))
 
     def to_json_string(self, **kw: Any) -> str:
@@ -1506,6 +1569,27 @@ class BaseGoalsParams:
 
 
 @dataclass
+class BaseGetStateAtPosResponse:
+    """Original type: base_get_state_at_pos_response"""
+
+    value: State
+
+    @classmethod
+    def from_json(cls, x: Any) -> "BaseGetStateAtPosResponse":
+        return cls(State.from_json(x))
+
+    def to_json(self) -> Any:
+        return (lambda x: x.to_json())(self.value)
+
+    @classmethod
+    def from_json_string(cls, x: str) -> "BaseGetStateAtPosResponse":
+        return cls.from_json(json.loads(x))
+
+    def to_json_string(self, **kw: Any) -> str:
+        return json.dumps(self.to_json(), **kw)
+
+
+@dataclass
 class BaseGetStateAtPosParams:
     """Original type: base_get_state_at_pos_params = { ... }"""
 
@@ -1542,6 +1626,27 @@ class BaseGetStateAtPosParams:
 
     @classmethod
     def from_json_string(cls, x: str) -> "BaseGetStateAtPosParams":
+        return cls.from_json(json.loads(x))
+
+    def to_json_string(self, **kw: Any) -> str:
+        return json.dumps(self.to_json(), **kw)
+
+
+@dataclass
+class BaseGetRootStateResponse:
+    """Original type: base_get_root_state_response"""
+
+    value: State
+
+    @classmethod
+    def from_json(cls, x: Any) -> "BaseGetRootStateResponse":
+        return cls(State.from_json(x))
+
+    def to_json(self) -> Any:
+        return (lambda x: x.to_json())(self.value)
+
+    @classmethod
+    def from_json_string(cls, x: str) -> "BaseGetRootStateResponse":
         return cls.from_json(json.loads(x))
 
     def to_json_string(self, **kw: Any) -> str:
@@ -1586,27 +1691,16 @@ class BaseGetRootStateParams:
 
 @dataclass
 class BaseAstResponse:
-    """Original type: base_ast_response = { ... }"""
+    """Original type: base_ast_response"""
 
-    result: Any
+    value: Any
 
     @classmethod
     def from_json(cls, x: Any) -> "BaseAstResponse":
-        if isinstance(x, dict):
-            return cls(
-                result=(
-                    (lambda x: x)(x["result"])
-                    if "result" in x
-                    else _atd_missing_json_field("BaseAstResponse", "result")
-                ),
-            )
-        else:
-            _atd_bad_json("BaseAstResponse", x)
+        return cls((lambda x: x)(x))
 
     def to_json(self) -> Any:
-        res: Dict[str, Any] = {}
-        res["result"] = (lambda x: x)(self.result)
-        return res
+        return (lambda x: x)(self.value)
 
     @classmethod
     def from_json_string(cls, x: str) -> "BaseAstResponse":
@@ -1657,27 +1751,16 @@ class BaseAstParams:
 
 @dataclass
 class BaseAstAtPosResponse:
-    """Original type: base_ast_at_pos_response = { ... }"""
+    """Original type: base_ast_at_pos_response"""
 
-    result: Any
+    value: Any
 
     @classmethod
     def from_json(cls, x: Any) -> "BaseAstAtPosResponse":
-        if isinstance(x, dict):
-            return cls(
-                result=(
-                    (lambda x: x)(x["result"])
-                    if "result" in x
-                    else _atd_missing_json_field("BaseAstAtPosResponse", "result")
-                ),
-            )
-        else:
-            _atd_bad_json("BaseAstAtPosResponse", x)
+        return cls((lambda x: x)(x))
 
     def to_json(self) -> Any:
-        res: Dict[str, Any] = {}
-        res["result"] = (lambda x: x)(self.result)
-        return res
+        return (lambda x: x)(self.value)
 
     @classmethod
     def from_json_string(cls, x: str) -> "BaseAstAtPosResponse":

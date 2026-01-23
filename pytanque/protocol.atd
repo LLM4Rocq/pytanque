@@ -31,28 +31,11 @@ type position = {
     character: int;
 }
 
-type base_start_params = {
-    ?pre_commands: string option;
-    ?opts: opts option;
-    uri: string;
-    thm: string;
-}
-
-type base_run_params = {
-    ?opts: opts option;
-    st: state;
-    tac: string;
-}
-
 type state = {
     st: int;
     ?hash: int option;
     proof_finished: bool;
     feedback: (int * string) list;
-}
-
-type base_goals_params = {
-    st: state;
 }
 
 type goal_hyp = {
@@ -66,55 +49,6 @@ type goal = {
     hyps: goal_hyp list;
     ty: string;
     ?pp: string option;
-}
-
-type base_goals_response = {
-    goals : goal list;
-    stack: (abstract list * abstract list) list;
-    shelf: abstract list;
-    given_up: abstract list
-}
-
-type base_premises_params = {
-    st: state;
-}
-
-type base_premises_response = abstract
-
-type base_ast_response = {
-    result: abstract
-}
-
-type base_ast_at_pos_response = {
-    result: abstract
-}
-
-type inspect = [
-    InspectPhysical <json name="Physical"> |
-    InspectGoals <json name="Goals">
-]
-
-type base_state_equal_params = {
-    kind: inspect list;
-    st1: state;
-    st2: state;
-}
-
-type base_state_equal_response = bool
-
-type base_state_hash_params = {
-    st: state;
-}
-
-type base_state_hash_response = int
-
-type base_set_workspace_params = {
-    debug: bool;
-    root: string;
-}
-
-type base_toc_params = {
-    uri: string;
 }
 
 type range = {
@@ -135,28 +69,10 @@ type toc_element = {
     range: range;
 }
 
-type base_toc_response = (string * toc_element list) list
-
-type base_ast_params = {
-    st: state;
-    text: string;
-}
-
-type base_ast_at_pos_params = {
-    uri: string;
-    position: position;
-}
-
-type base_get_state_at_pos_params = {
-    ?opts: opts option;
-    uri: string;
-    position: position
-}
-
-type base_get_root_state_params = {
-    ?opts: opts option;
-    uri: string;
-}
+type inspect = [
+    InspectPhysical <json name="Physical"> |
+    InspectGoals <json name="Goals">
+]
 
 type notation_info = {
     locations: abstract list;
@@ -165,6 +81,96 @@ type notation_info = {
     notation: string;
     scope: string nullable;
 }
+
+type base_start_params = {
+    ?pre_commands: string option;
+    ?opts: opts option;
+    uri: string;
+    thm: string;
+}
+
+type base_start_response = state
+
+type base_set_workspace_params = {
+    debug: bool;
+    root: string;
+}
+
+type base_set_workspace_response = abstract
+
+type base_run_params = {
+    ?opts: opts option;
+    st: state;
+    tac: string;
+}
+
+type base_run_response = state
+
+type base_goals_params = {
+    st: state;
+}
+
+type base_goals_response = {
+    goals : goal list;
+    stack: (abstract list * abstract list) list;
+    shelf: abstract list;
+    given_up: abstract list
+}
+
+type base_premises_params = {
+    st: state;
+}
+
+type base_premises_response = abstract
+
+type base_state_equal_params = {
+    kind: inspect list;
+    st1: state;
+    st2: state;
+}
+
+type base_state_equal_response = bool
+
+type base_state_hash_params = {
+    st: state;
+}
+
+type base_state_hash_response = int
+
+type base_toc_params = {
+    uri: string;
+}
+
+type base_toc_response = (string * toc_element list) list
+
+type base_ast_params = {
+    st: state;
+    text: string;
+}
+
+type base_ast_response = abstract
+
+type base_ast_at_pos_params = {
+    uri: string;
+    position: position;
+}
+
+type base_ast_at_pos_response = abstract
+
+type base_get_state_at_pos_params = {
+    ?opts: opts option;
+    uri: string;
+    position: position
+}
+
+type base_get_state_at_pos_response = state
+
+type base_get_root_state_params = {
+    ?opts: opts option;
+    uri: string;
+}
+
+type base_get_root_state_response = state
 
 type base_list_notations_in_statement_params = {
     st: state;
