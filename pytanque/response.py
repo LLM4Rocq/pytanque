@@ -3,12 +3,18 @@ from dataclasses import dataclass, field
 from abc import abstractmethod, ABC
 from typing import Any, Callable, Dict, List, NoReturn, Optional, Tuple, Union
 
+
 from .protocol import (
     BaseAstResponse,
     BaseAstAtPosResponse,
+    BaseGetRootStateResponse,
+    BaseGetStateAtPosResponse,
     BaseGoalsResponse,
     BaseListNotationsInStatementResponse,
     BasePremisesResponse,
+    BaseRunResponse,
+    BaseSetWorkspaceResponse,
+    BaseStartResponse,
     BaseStateEqualResponse,
     BaseStateHashResponse,
     BaseTocResponse,
@@ -17,50 +23,38 @@ from .protocol import (
 )
 
 class BaseResponse(ABC):
-    @classmethod
-    def extract_response(cls, resp: Response):
-        return cls.from_json(resp.result).value
+    def extract_response(self):
+        return self.value
 
     @classmethod
     @abstractmethod
     def from_json(cls, x: Response):
         pass
 
+    @abstractmethod
+    def to_json(cls, x: Response):
+        pass
+
 class AnyResponse:
-    @classmethod
-    def extract_response(cls, resp: Response) -> Any:
-        return resp.result
+    def extract_response(self) -> Any:
+        return self.value
 
-class StartResponse(BaseResponse):
-    @classmethod
-    def extract_response(cls, resp: Response) -> State:
-        return State.from_json(resp.result)
+class SessionResponse(BaseResponse):
+    def extract_response(self) -> State:
+        return State.from_json(self.to_json())
 
-class SetWorkspaceResponse(BaseResponse):
-    @classmethod
-    def extract_response(cls, resp: Response) -> Any:
-        return {}
+class StartResponse(BaseStartResponse, SessionResponse):
+    pass
 
-class RunResponse(BaseResponse):
-    @classmethod
-    def extract_response(cls, resp: Response) -> State:
-        return State.from_json(resp.result)
+class SetWorkspaceResponse(BaseSetWorkspaceResponse, AnyResponse):
+    pass
+
+class RunResponse(BaseRunResponse, SessionResponse):
+    pass
 
 class GoalsResponse(BaseGoalsResponse, BaseResponse):
-    @classmethod
-    def extract_response(cls, resp: Response):
-        if not resp.result:
-            return []
-        goals_resp = super().from_json(resp.result)
-        return goals_resp.goals
-
-class CompleteGoalsResponse(BaseGoalsResponse, BaseResponse):
-    @classmethod
-    def extract_response(cls, resp: Response):
-        if not resp.result:
-            return {}
-        goals_resp = super().from_json(resp.result)
-        return goals_resp
+    def extract_response(self) -> Any:
+        return self
 
 class PremisesResponse(BasePremisesResponse, BaseResponse):
     pass
@@ -75,25 +69,17 @@ class TocResponse(BaseTocResponse, BaseResponse):
     pass
 
 class AstResponse(BaseAstResponse, BaseResponse):
-    @classmethod
-    def extract_response(cls, resp: Response):
-        return resp.result["st"]
+    pass
 
 class AstAtPosResponse(BaseAstAtPosResponse, AnyResponse):
     pass
 
-class GetStateAtPosResponse(BaseResponse):
-    @classmethod
-    def extract_response(cls, resp: Response):
-        return State.from_json(resp.result)
+class GetStateAtPosResponse(BaseGetStateAtPosResponse, SessionResponse):
+    pass
 
-class GetRootStateResponse(BaseResponse):
-    @classmethod
-    def extract_response(cls, resp: Response):
-        return State.from_json(resp.result)
+class GetRootStateResponse(BaseGetRootStateResponse, SessionResponse):
+    pass
 
 class ListNotationsInStatementResponse(BaseListNotationsInStatementResponse, BaseResponse):
-    @classmethod
-    def extract_response(cls, resp: Response):
-        base = super().from_json(resp.result)
-        return base.st
+    def extract_response(self):
+        return self.st
