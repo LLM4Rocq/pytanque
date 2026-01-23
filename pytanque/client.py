@@ -21,6 +21,7 @@ import requests
 from typing_extensions import Self
 from types import TracebackType
 from .routes import PETANQUE_ROUTES, Params, RouteName
+from .response import BaseResponse, GoalsResponse
 from .params import (
     StartParams,
     RunParams,
@@ -105,13 +106,13 @@ def route(route_name: RouteName):
     Send the return parameters to `mk_request` through the given route.
     """
     def decorator(fn):
+        route = PETANQUE_ROUTES[route_name]
         @functools.wraps(fn)
         def wrapper(self: Pytanque, *args, **kwargs):
             timeout = kwargs.pop("timeout", None)
             params = fn(self, *args, **kwargs)
             resp = self.query(route_name, params, timeout=timeout)
-            return self.extract_response(route_name, resp)
-        route = PETANQUE_ROUTES[route_name]
+            return resp.extract_response()
         wrapper.__route_name__ = route_name
         wrapper.__params_cls__ = route.params
         wrapper.__response_cls__ = route.response
@@ -387,7 +388,7 @@ class Pytanque:
         resp_cls = PETANQUE_ROUTES[route_name].response
         return resp_cls.extract_response(resp)
     
-    def query(self, route_name: RouteName, params: Params, size: int = 4096, timeout: Optional[float] = None) -> Response:
+    def query(self, route_name: RouteName, params: Params, size: int = 4096, timeout: Optional[float] = None) -> BaseResponse:
         """
         Send a low-level JSON-RPC query to the server or subprocess.
 
@@ -453,7 +454,8 @@ class Pytanque:
                 raise PetanqueError(
                     -32603, f"Sent request {self.id}, got response {resp.id}"
                 )
-            return resp
+            resp_cls = PETANQUE_ROUTES[route_name].response
+            return resp_cls.from_json(resp.result)
         except ValueError:
             failure = Failure.from_json_string(raw)
             raise PetanqueError(failure.error.code, failure.error.message)
@@ -610,7 +612,6 @@ class Pytanque:
         params = RunParams(state, cmd, opts)
         return params
 
-    @route(RouteName.GOALS)
     def goals(self, state: State, pretty: bool = True) -> list[Goal]:
         """
         Retrieve the current goals for a proof state.
@@ -645,11 +646,11 @@ class Pytanque:
         ...     for i, goal in enumerate(goals):
         ...         print(f"Goal {i}: {goal.pp}")
         """
-        params = GoalsParams(state)
-        return params
+        complete_goals = self.complete_goals(state, pretty=pretty)
+        return complete_goals.goals
 
-    # @send_request(RouteName.COMPLETE_GOALS)
-    def complete_goals(self, state: State, pretty: bool = True) -> Any:
+    @route(RouteName.GOALS)
+    def complete_goals(self, state: State, pretty: bool = True) -> GoalsResponse:
         """
         Return the complete goal information.
         """
