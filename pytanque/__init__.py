@@ -31,7 +31,6 @@ from .params import (
 from .response import (
     AstResponse,
     AstAtPosResponse,
-    CompleteGoalsResponse,
     GetRootStateResponse,
     GetStateAtPosResponse,
     GoalsResponse,

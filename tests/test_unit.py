@@ -9,7 +9,7 @@ from pathlib import Path
 
 from pytanque import Pytanque, PetanqueError, InspectPhysical, InspectGoals
 from pytanque.params import StartParams
-from pytanque.response import GoalsResponse
+from pytanque.response import GoalsResponse, StartResponse
 from pytanque.routes import RouteName
 
 class TestPytanqueConstructor:
@@ -59,8 +59,7 @@ class TestQueryMethod:
             uri = Path("./examples/foo.v").resolve().as_uri()
             params = StartParams(uri, "addnC")
             response = client.query(RouteName.START, params)
-            assert response.id is not None
-            assert response.result is not None
+            assert isinstance(response, StartResponse)
         finally:
             client.close()
 
