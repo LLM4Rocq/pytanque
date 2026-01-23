@@ -21,7 +21,7 @@ import requests
 from typing_extensions import Self
 from types import TracebackType
 from .routes import PETANQUE_ROUTES, Params, RouteName
-from .protocol import (
+from .params import (
     StartParams,
     RunParams,
     GoalsParams,
@@ -90,7 +90,7 @@ InspectPhysical = Inspect(InspectPhysical())
 InspectGoals = Inspect(InspectGoals())
 
 
-def mk_request(id: int, params: Params, route: str, project_state=True) -> Request:
+def mk_request(id: int, params: Params, route: RouteName, project_state=True) -> Request:
     # TODO: update petanque to remove project_state?
     params_json = params.to_json()
     if project_state:
@@ -98,9 +98,9 @@ def mk_request(id: int, params: Params, route: str, project_state=True) -> Reque
             value = getattr(params, f.name)
             if isinstance(value, State):
                 params_json[f.name] = params_json[f.name]['st']
-    return Request(id, route, params_json)
+    return Request(id, route.value, params_json)
 
-def send_request(route: RouteName, is_session=False, is_primitive=False):
+def route(route_name: RouteName):
     """
     Send the return parameters to `mk_request` through the given route.
     """
@@ -109,15 +109,12 @@ def send_request(route: RouteName, is_session=False, is_primitive=False):
         def wrapper(self: Pytanque, *args, **kwargs):
             timeout = kwargs.pop("timeout", None)
             params = fn(self, *args, **kwargs)
-            resp = self.query(route, params, timeout=timeout)
-            resp_cls = PETANQUE_ROUTES[route].response
-            return resp_cls.extract_response(resp)
-        wrapper.__send_request__ = route
-        wrapper.__is_session__ = is_session
-        wrapper.__is_primitive__ = is_primitive
-        if is_primitive and not is_session:
-            raise PetanqueError(-32603, f"`is_session` is set to False in the send_request decorator\
-                                 for {fn.__name__}, while `is_primitive` is set to True")
+            resp = self.query(route_name, params, timeout=timeout)
+            return self.extract_response(route_name, resp)
+        route = PETANQUE_ROUTES[route_name]
+        wrapper.__route_name__ = route_name
+        wrapper.__params_cls__ = route.params
+        wrapper.__response_cls__ = route.response
         return wrapper
     return decorator
 
@@ -386,7 +383,11 @@ class Pytanque:
 
             return json_content
 
-    def query(self, route: RouteName, params: Params, size: int = 4096, timeout: Optional[float] = None) -> Response:
+    def extract_response(self, route_name: RouteName, resp: Response) -> Any:
+        resp_cls = PETANQUE_ROUTES[route_name].response
+        return resp_cls.extract_response(resp)
+    
+    def query(self, route_name: RouteName, params: Params, size: int = 4096, timeout: Optional[float] = None) -> Response:
         """
         Send a low-level JSON-RPC query to the server or subprocess.
 
@@ -424,7 +425,7 @@ class Pytanque:
         self.id += 1
         project_state = (self.mode != PytanqueMode.HTTP)
         # TODO: Maybe update petanque so that it takes whole state as input instead of state.st
-        request = mk_request(self.id, params, route, project_state=project_state)
+        request = mk_request(self.id, params, route_name, project_state=project_state)
         payload = json.dumps(request.to_json()) + "\n"
         logger.info(f"Query Payload: {payload}")
 
@@ -457,7 +458,7 @@ class Pytanque:
             failure = Failure.from_json_string(raw)
             raise PetanqueError(failure.error.code, failure.error.message)
 
-    @send_request(RouteName.START, is_session=True, is_primitive=True)
+    @route(RouteName.START)
     def start(
         self,
         file: str,
@@ -504,7 +505,7 @@ class Pytanque:
         uri = pathlib.Path(path).as_uri()
         return StartParams(uri, thm, pre_commands, opts)
 
-    @send_request(RouteName.SET_WORKSPACE, is_session=True)
+    @route(RouteName.SET_WORKSPACE)
     def set_workspace(
         self,
         debug: bool,
@@ -534,7 +535,7 @@ class Pytanque:
         uri = pathlib.Path(path).as_uri()
         return SetWorkspaceParams(debug, uri)
 
-    @send_request(RouteName.RUN, is_session=True)
+    @route(RouteName.RUN)
     def run(
         self,
         state: State,
@@ -609,7 +610,7 @@ class Pytanque:
         params = RunParams(state, cmd, opts)
         return params
 
-    @send_request(RouteName.GOALS)
+    @route(RouteName.GOALS)
     def goals(self, state: State, pretty: bool = True) -> list[Goal]:
         """
         Retrieve the current goals for a proof state.
@@ -655,7 +656,7 @@ class Pytanque:
         params = GoalsParams(state)
         return params
 
-    @send_request(RouteName.PREMISES)
+    @route(RouteName.PREMISES)
     def premises(self, state: State) -> Any:
         """
         Get the list of accessible premises (lemmas, definitions) for the current state.
@@ -685,7 +686,7 @@ class Pytanque:
         params = PremisesParams(state)
         return params
 
-    @send_request(RouteName.STATE_EQUAL)
+    @route(RouteName.STATE_EQUAL)
     def state_equal(self, st1: State, st2: State, kind: Inspect) -> bool:
         """
         Compare two proof states for equality.
@@ -724,7 +725,7 @@ class Pytanque:
         params = StateEqualParams([kind], st1, st2)
         return params
 
-    @send_request(RouteName.STATE_HASH)
+    @route(RouteName.STATE_HASH)
     def state_hash(self, state: State) -> int:
         """
         Get a hash value for a proof state.
@@ -754,7 +755,7 @@ class Pytanque:
         params = StateHashParams(state)
         return params
     
-    @send_request(RouteName.TOC)
+    @route(RouteName.TOC)
     def toc(self, file: str) -> list[tuple[str, List[TocElement]]]:
         """
         Get the table of contents (available definitions and theorems) for a Coq/Rocq file.
@@ -789,7 +790,7 @@ class Pytanque:
         params = TocParams(uri)
         return params
 
-    @send_request(RouteName.AST)
+    @route(RouteName.AST)
     def ast(self, state: State, text: str) -> dict:
         """
         Get the Abstract Syntax Tree (AST) of a command parsed at a given state.
@@ -831,7 +832,7 @@ class Pytanque:
         params = AstParams(state, text)
         return params
 
-    @send_request(RouteName.AST_AT_POS)
+    @route(RouteName.AST_AT_POS)
     def ast_at_pos(
         self,
         file: str,
@@ -883,7 +884,7 @@ class Pytanque:
         params = AstAtPosParams(uri, pos)
         return params
 
-    @send_request(RouteName.GET_STATE_AT_POS)
+    @route(RouteName.GET_STATE_AT_POS)
     def get_state_at_pos(
         self, file: str, line: int, character: int, opts: Optional[Opts] = None
     ) -> State:
@@ -947,7 +948,7 @@ class Pytanque:
         params = GetStateAtPosParams(uri, pos, opts)
         return params
 
-    @send_request(RouteName.GET_ROOT_STATE)
+    @route(RouteName.GET_ROOT_STATE)
     def get_root_state(self, file: str, opts: Optional[Opts] = None) -> State:
         """
         Get the initial (root) state of a document.
@@ -1004,7 +1005,7 @@ class Pytanque:
         params = GetRootStateParams(uri, opts)
         return params
 
-    @send_request(RouteName.LIST_NOTATIONS_IN_STATEMENTS)
+    @route(RouteName.LIST_NOTATIONS_IN_STATEMENTS)
     def list_notations_in_statement(self, state: State, statement: str) -> list[dict]:
         """
         Get the list of notations appearing in a theorem/lemma statement.
