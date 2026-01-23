@@ -31,14 +31,14 @@ type position = {
     character: int;
 }
 
-type start_params = {
+type base_start_params = {
     ?pre_commands: string option;
     ?opts: opts option;
     uri: string;
     thm: string;
 }
 
-type run_params = {
+type base_run_params = {
     ?opts: opts option;
     st: state;
     tac: string;
@@ -51,7 +51,7 @@ type state = {
     feedback: (int * string) list;
 }
 
-type goals_params = {
+type base_goals_params = {
     st: state;
 }
 
@@ -75,7 +75,7 @@ type base_goals_response = {
     given_up: abstract list
 }
 
-type premises_params = {
+type base_premises_params = {
     st: state;
 }
 
@@ -94,7 +94,7 @@ type inspect = [
     InspectGoals <json name="Goals">
 ]
 
-type state_equal_params = {
+type base_state_equal_params = {
     kind: inspect list;
     st1: state;
     st2: state;
@@ -102,18 +102,18 @@ type state_equal_params = {
 
 type base_state_equal_response = bool
 
-type state_hash_params = {
+type base_state_hash_params = {
     st: state;
 }
 
 type base_state_hash_response = int
 
-type set_workspace_params = {
+type base_set_workspace_params = {
     debug: bool;
     root: string;
 }
 
-type toc_params = {
+type base_toc_params = {
     uri: string;
 }
 
@@ -137,23 +137,23 @@ type toc_element = {
 
 type base_toc_response = (string * toc_element list) list
 
-type ast_params = {
+type base_ast_params = {
     st: state;
     text: string;
 }
 
-type ast_at_pos_params = {
+type base_ast_at_pos_params = {
     uri: string;
     position: position;
 }
 
-type get_state_at_pos_params = {
+type base_get_state_at_pos_params = {
     ?opts: opts option;
     uri: string;
     position: position
 }
 
-type get_root_state_params = {
+type base_get_root_state_params = {
     ?opts: opts option;
     uri: string;
 }
@@ -166,7 +166,7 @@ type notation_info = {
     scope: string nullable;
 }
 
-type list_notations_in_statement_params = {
+type base_list_notations_in_statement_params = {
     st: state;
     statement: string;
 }
