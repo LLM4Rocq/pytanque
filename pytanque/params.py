@@ -16,7 +16,8 @@ from .protocol import (
     BaseStartParams,
     BaseStateEqualParams,
     BaseStateHashParams,
-    BaseTocParams
+    BaseTocParams,
+    State
 )
 
 class BaseParams:
@@ -27,6 +28,11 @@ class BaseParams:
 
     @abstractmethod
     def to_json(self):
+        pass
+
+class SessionParams(BaseParams):
+    @abstractmethod
+    def extract_parent(self) -> Tuple[State, str]:
         pass
 
 class PrimitiveParams(BaseParams):
@@ -56,8 +62,9 @@ class ListNotationsInStatementParams(BaseListNotationsInStatementParams, BasePar
 class PremisesParams(BasePremisesParams, BaseParams):
     pass
 
-class RunParams(BaseRunParams, BaseParams):
-    pass
+class RunParams(BaseRunParams, SessionParams):
+    def extract_parent(self) -> Tuple[State, str]:
+        return self.st, self.tac
 
 class SetWorkspaceParams(BaseSetWorkspaceParams, UniversalParams):
     pass
