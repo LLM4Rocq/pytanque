@@ -229,8 +229,8 @@ class Pytanque:
                 self.process = None
             elif mode == PytanqueMode.HTTP:
                 self.mode = PytanqueMode.HTTP
-                self.host = None
-                self.port = None
+                self.host = host
+                self.port = port
                 self.socket = None
                 self.process = None
         else:
@@ -323,14 +323,14 @@ class Pytanque:
                 break
         return "".join(fragments)
 
-    def _send_request_message(self, payload: Any, timeout: Optional[float]=None) -> None:
-        url = f"http://{self.host}:{self.port}"
+    def _send_request_message(self, route_name:RouteName, payload: Any, timeout: Optional[float]=None) -> None:
+        url = f"http://{self.host}:{self.port}/rpc"
         if timeout:
             payload['timeout'] = timeout
+        payload['route_name'] = route_name
         response = requests.post(
             url,
-            data=payload,
-            headers={"Content-Type": "application/json"},
+            json=payload,
             timeout=timeout
         )
         try:
@@ -383,10 +383,6 @@ class Pytanque:
                 continue
 
             return json_content
-
-    def extract_response(self, route_name: RouteName, resp: Response) -> Any:
-        resp_cls = PETANQUE_ROUTES[route_name].response
-        return resp_cls.extract_response(resp)
     
     def query(self, route_name: RouteName, params: Params, size: int = 4096, timeout: Optional[float] = None) -> BaseResponse:
         """
@@ -427,13 +423,14 @@ class Pytanque:
         project_state = (self.mode != PytanqueMode.HTTP)
         # TODO: Maybe update petanque so that it takes whole state as input instead of state.st
         request = mk_request(self.id, params, route_name, project_state=project_state)
-        payload = json.dumps(request.to_json()) + "\n"
+        payload = request.to_json()
         logger.info(f"Query Payload: {payload}")
 
         if self.mode == PytanqueMode.SOCKET:
             #TODO: Improve timeout precision
             self.socket.settimeout(timeout)
             try:
+                payload = json.dumps(payload) + "\n"
                 self.socket.sendall(payload.encode())
                 raw = self._read_socket_response(size)
             except TimeoutError:
@@ -443,12 +440,14 @@ class Pytanque:
         elif self.mode == PytanqueMode.STDIO:
             if timeout:
                 logging.warning("Timeout not supported on Stdio mode.")
+            payload = json.dumps(payload) + "\n"
             self._send_lsp_message(payload)
             raw = self._read_lsp_response()
         elif self.mode == PytanqueMode.HTTP:
-            raw = self._send_request_message(payload, timeout)
+            raw = self._send_request_message(route_name, payload, timeout)
         try:
             logger.info(f"Query Response: {raw}")
+            print(raw)
             resp = Response.from_json_string(raw)
             if resp.id != self.id:
                 raise PetanqueError(
@@ -456,7 +455,7 @@ class Pytanque:
                 )
             resp_cls = PETANQUE_ROUTES[route_name].response
             return resp_cls.from_json(resp.result)
-        except ValueError:
+        except ValueError as e:
             failure = Failure.from_json_string(raw)
             raise PetanqueError(failure.error.code, failure.error.message)
 
