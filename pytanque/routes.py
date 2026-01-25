@@ -74,7 +74,6 @@ class RouteName(StrEnum):
     SET_WORKSPACE = "petanque/setWorkspace"
     RUN = "petanque/run"
     GOALS = "petanque/goals"
-    # COMPLETE_GOALS = "petanque/goals"
     PREMISES = "petanque/premises"
     STATE_EQUAL= "petanque/state/eq"
     STATE_HASH = "petanque/state/hash"
