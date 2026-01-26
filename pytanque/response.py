@@ -42,9 +42,6 @@ class AnyResponse:
 class SessionResponse(BaseResponse):
     def extract_response(self) -> State:
         return State.from_json(self.to_json())
-    
-    def extract_state(self) -> State:
-        return State.from_json(self.to_json())
 
 class StartResponse(BaseStartResponse, SessionResponse):
     pass
