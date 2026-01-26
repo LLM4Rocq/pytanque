@@ -36,6 +36,7 @@ type state = {
     ?hash: int option;
     proof_finished: bool;
     feedback: (int * string) list;
+    ~generation <python default="0">: int;
 }
 
 type goal_hyp = {

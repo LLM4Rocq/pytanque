@@ -463,6 +463,7 @@ class State:
     proof_finished: bool
     feedback: List[Tuple[int, str]]
     hash: Optional[int] = None
+    generation: int = field(default_factory=lambda: 0)
 
     @classmethod
     def from_json(cls, x: Any) -> "State":
@@ -492,6 +493,7 @@ class State:
                     else _atd_missing_json_field("State", "feedback")
                 ),
                 hash=_atd_read_int(x["hash"]) if "hash" in x else None,
+                generation=_atd_read_int(x["generation"]) if "generation" in x else 0,
             )
         else:
             _atd_bad_json("State", x)
@@ -511,6 +513,7 @@ class State:
         )(self.feedback)
         if self.hash is not None:
             res["hash"] = _atd_write_int(self.hash)
+        res["generation"] = _atd_write_int(self.generation)
         return res
 
     @classmethod
