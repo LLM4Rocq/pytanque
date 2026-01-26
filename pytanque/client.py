@@ -111,7 +111,10 @@ def route(route_name: RouteName):
             timeout = kwargs.pop("timeout", None)
             params = fn(self, *args, **kwargs)
             resp = self.query(route_name, params, timeout=timeout)
+            if not resp and resp is not False:
+                return None
             return resp.extract_response()
+            
         return wrapper
     return decorator
 
@@ -380,7 +383,13 @@ class Pytanque:
 
             return json_content
     
-    def query(self, route_name: RouteName, params: Params, size: int = 4096, timeout: Optional[float] = None) -> BaseResponse:
+    def query(
+        self,
+        route_name: RouteName,
+        params: Params,
+        size: int = 4096,
+        timeout: Optional[float] = None
+    ) -> Optional[BaseResponse]:
         """
         Send a low-level JSON-RPC query to the server or subprocess.
 
@@ -442,12 +451,14 @@ class Pytanque:
         elif self.mode == PytanqueMode.HTTP:
             raw = self._send_request_message(route_name, payload, timeout=timeout)
         try:
-            logger.info(f"Query Response: {raw}")
+            logger.info(f"Query Response: {raw}".strip())
             resp = Response.from_json_string(raw)
             if resp.id != self.id:
                 raise PetanqueError(
                     -32603, f"Sent request {self.id}, got response {resp.id}"
                 )
+            if not resp.result and resp.result is not False:
+                return None
             response_cls = PETANQUE_ROUTES[route_name].response_cls
             return response_cls.from_json(resp.result)
         except ValueError as e:
@@ -461,6 +472,7 @@ class Pytanque:
         thm: str,
         pre_commands: Optional[str] = None,
         opts: Optional[Opts] = None,
+        timeout: Optional[float] = None
     ) -> State:
         """
         Start a proof session for a specific theorem in a Coq/Rocq file.
@@ -538,7 +550,7 @@ class Pytanque:
         cmd: str,
         opts: Optional[Opts] = None,
         verbose: bool = False,
-        timeout: Optional[int] = None,
+        timeout: Optional[float] = None
     ) -> State:
         """
         Execute a command on the current proof state.
@@ -606,7 +618,7 @@ class Pytanque:
         params = RunParams(state, cmd, opts)
         return params
 
-    def goals(self, state: State, pretty: bool = True) -> list[Goal]:
+    def goals(self, state: State, pretty: bool = True, timeout: Optional[float] = None) -> list[Goal]:
         """
         Retrieve the current goals for a proof state.
 
@@ -641,10 +653,12 @@ class Pytanque:
         ...         print(f"Goal {i}: {goal.pp}")
         """
         complete_goals = self.complete_goals(state, pretty=pretty)
+        if not complete_goals:
+            return []
         return complete_goals.goals
 
     @route(RouteName.GOALS)
-    def complete_goals(self, state: State, pretty: bool = True) -> GoalsResponse:
+    def complete_goals(self, state: State, pretty: bool = True, timeout: Optional[float] = None) -> GoalsResponse:
         """
         Return the complete goal information.
         """
@@ -652,7 +666,7 @@ class Pytanque:
         return params
 
     @route(RouteName.PREMISES)
-    def premises(self, state: State) -> Any:
+    def premises(self, state: State, timeout: Optional[float] = None) -> Any:
         """
         Get the list of accessible premises (lemmas, definitions) for the current state.
 
@@ -682,7 +696,7 @@ class Pytanque:
         return params
 
     @route(RouteName.STATE_EQUAL)
-    def state_equal(self, st1: State, st2: State, kind: Inspect) -> bool:
+    def state_equal(self, st1: State, st2: State, kind: Inspect, timeout: Optional[float] = None) -> bool:
         """
         Compare two proof states for equality.
 
@@ -721,7 +735,7 @@ class Pytanque:
         return params
 
     @route(RouteName.STATE_HASH)
-    def state_hash(self, state: State) -> int:
+    def state_hash(self, state: State, timeout: Optional[float] = None) -> int:
         """
         Get a hash value for a proof state.
 
@@ -751,7 +765,7 @@ class Pytanque:
         return params
     
     @route(RouteName.TOC)
-    def toc(self, file: str) -> list[tuple[str, List[TocElement]]]:
+    def toc(self, file: str, timeout: Optional[float] = None) -> list[tuple[str, List[TocElement]]]:
         """
         Get the table of contents (available definitions and theorems) for a Coq/Rocq file.
 
@@ -786,7 +800,12 @@ class Pytanque:
         return params
 
     @route(RouteName.AST)
-    def ast(self, state: State, text: str) -> dict:
+    def ast(
+        self,
+        state: State,
+        text: str,
+        timeout: Optional[float] = None
+    ) -> dict:
         """
         Get the Abstract Syntax Tree (AST) of a command parsed at a given state.
 
@@ -833,6 +852,7 @@ class Pytanque:
         file: str,
         line: int,
         character: int,
+        timeout: Optional[float] = None
     ) -> dict:
         """
         Get the Abstract Syntax Tree (AST) at a specific position in a file.
@@ -881,7 +901,12 @@ class Pytanque:
 
     @route(RouteName.GET_STATE_AT_POS)
     def get_state_at_pos(
-        self, file: str, line: int, character: int, opts: Optional[Opts] = None
+        self,
+        file: str,
+        line: int,
+        character: int,
+        opts: Optional[Opts] = None,
+        timeout: Optional[float] = None
     ) -> State:
         """
         Get the proof state at a specific position in a file.
@@ -944,7 +969,7 @@ class Pytanque:
         return params
 
     @route(RouteName.GET_ROOT_STATE)
-    def get_root_state(self, file: str, opts: Optional[Opts] = None) -> State:
+    def get_root_state(self, file: str, opts: Optional[Opts] = None, timeout: Optional[float] = None) -> State:
         """
         Get the initial (root) state of a document.
 
@@ -1001,7 +1026,7 @@ class Pytanque:
         return params
 
     @route(RouteName.LIST_NOTATIONS_IN_STATEMENTS)
-    def list_notations_in_statement(self, state: State, statement: str) -> list[dict]:
+    def list_notations_in_statement(self, state: State, statement: str, timeout: Optional[float] = None) -> list[dict]:
         """
         Get the list of notations appearing in a theorem/lemma statement.
 
