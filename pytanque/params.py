@@ -32,7 +32,7 @@ class BaseParams:
 
 class SessionParams(BaseParams):
     @abstractmethod
-    def extract_parent(self) -> Tuple[State, str]:
+    def extract_parent(self) -> State:
         pass
 
 class PrimitiveParams(BaseParams):
@@ -63,8 +63,8 @@ class PremisesParams(BasePremisesParams, BaseParams):
     pass
 
 class RunParams(BaseRunParams, SessionParams):
-    def extract_parent(self) -> Tuple[State, str]:
-        return self.st, self.tac
+    def extract_parent(self) -> State:
+        return self.st
 
 class SetWorkspaceParams(BaseSetWorkspaceParams, UniversalParams):
     pass
