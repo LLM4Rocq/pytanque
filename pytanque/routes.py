@@ -86,8 +86,8 @@ class RouteName(StrEnum):
 
 @dataclass(frozen=True)
 class Route:
-    params: Params
-    response: Responses
+    params_cls: Params
+    response_cls: Responses
 
 PETANQUE_ROUTES: dict[RouteName, Route] = {
     RouteName.START: Route(StartParams, StartResponse),

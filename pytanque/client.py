@@ -106,16 +106,12 @@ def route(route_name: RouteName):
     Send the return parameters to `mk_request` through the given route.
     """
     def decorator(fn):
-        route = PETANQUE_ROUTES[route_name]
         @functools.wraps(fn)
         def wrapper(self: Pytanque, *args, **kwargs):
             timeout = kwargs.pop("timeout", None)
             params = fn(self, *args, **kwargs)
             resp = self.query(route_name, params, timeout=timeout)
             return resp.extract_response()
-        wrapper.__route_name__ = route_name
-        wrapper.__params_cls__ = route.params
-        wrapper.__response_cls__ = route.response
         return wrapper
     return decorator
 
@@ -214,25 +210,23 @@ class Pytanque:
         >>> client = Pytanque(stdio=True)
         >>> client.connect()
         """
+        self.process = None
+        self.host = None
+        self.port = None
+        self.socket = None
+        self.session_id = None
         if stdio or mode == PytanqueMode.STDIO:
             self.mode = PytanqueMode.STDIO
-            self.process = None
-            self.host = None
-            self.port = None
-            self.socket = None
         elif host is not None and port is not None:
             if mode == PytanqueMode.SOCKET:
                 self.mode = PytanqueMode.SOCKET
                 self.host = host
                 self.port = port
                 self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                self.process = None
             elif mode == PytanqueMode.HTTP:
                 self.mode = PytanqueMode.HTTP
                 self.host = host
                 self.port = port
-                self.socket = None
-                self.process = None
         else:
             raise ValueError(
                 "Must specify either (host, port) for socket/http mode or mode=PytanqueMode.STDIO for stdio mode"
@@ -276,7 +270,9 @@ class Pytanque:
             )
             logger.info(f"Spawned pet subprocess")
         elif self.mode == PytanqueMode.HTTP:
-            logger.info("No connection required for HTTP mode.")
+            url = f"http://{self.host}:{self.port}/login"
+            response = requests.get(url)
+            self.session_id = response.json()['session_id']
 
     def close(self) -> None:
         """
@@ -325,9 +321,9 @@ class Pytanque:
 
     def _send_request_message(self, route_name:RouteName, payload: Any, timeout: Optional[float]=None) -> None:
         url = f"http://{self.host}:{self.port}/rpc"
-        if timeout:
-            payload['timeout'] = timeout
+        payload['timeout'] = timeout
         payload['route_name'] = route_name
+        payload['session_id'] = self.session_id
         response = requests.post(
             url,
             json=payload,
@@ -444,17 +440,16 @@ class Pytanque:
             self._send_lsp_message(payload)
             raw = self._read_lsp_response()
         elif self.mode == PytanqueMode.HTTP:
-            raw = self._send_request_message(route_name, payload, timeout)
+            raw = self._send_request_message(route_name, payload, timeout=timeout)
         try:
             logger.info(f"Query Response: {raw}")
-            print(raw)
             resp = Response.from_json_string(raw)
             if resp.id != self.id:
                 raise PetanqueError(
                     -32603, f"Sent request {self.id}, got response {resp.id}"
                 )
-            resp_cls = PETANQUE_ROUTES[route_name].response
-            return resp_cls.from_json(resp.result)
+            response_cls = PETANQUE_ROUTES[route_name].response_cls
+            return response_cls.from_json(resp.result)
         except ValueError as e:
             failure = Failure.from_json_string(raw)
             raise PetanqueError(failure.error.code, failure.error.message)
