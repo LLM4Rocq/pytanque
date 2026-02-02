@@ -35,9 +35,8 @@ class BaseResponse(ABC):
     def to_json(cls, x: Response):
         pass
 
-class AnyResponse:
-    def extract_response(self) -> Any:
-        return self.value
+class AnyResponse(BaseResponse):
+    pass
 
 class SessionResponse(BaseResponse):
     def extract_response(self) -> State:
