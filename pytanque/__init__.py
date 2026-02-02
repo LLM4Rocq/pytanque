@@ -1,4 +1,5 @@
-from .client import Pytanque, State, PetanqueError, InspectPhysical, InspectGoals
+from .client import Pytanque, State, PetanqueError, InspectPhysical, InspectGoals, PytanqueMode
+
 from .protocol import (
     Request,
     Response,
