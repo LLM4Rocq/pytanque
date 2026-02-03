@@ -8,8 +8,8 @@ import pytest
 from pathlib import Path
 
 from pytanque import Pytanque, PetanqueError, InspectPhysical, InspectGoals
-from pytanque.params import StartParams
-from pytanque.response import GoalsResponse, StartResponse
+from pytanque.routes import StartParams
+from pytanque.routes import GoalsResponse, StartResponse
 from pytanque.routes import RouteName
 
 class TestPytanqueConstructor:
