@@ -21,8 +21,8 @@ import requests
 from typing_extensions import Self
 from types import TracebackType
 from .routes import PETANQUE_ROUTES, Params, RouteName
-from .response import BaseResponse, GoalsResponse
-from .params import (
+
+from .routes import (
     StartParams,
     RunParams,
     GoalsParams,
@@ -36,6 +36,7 @@ from .params import (
     GetStateAtPosParams,
     GetRootStateParams,
     ListNotationsInStatementParams,
+    Responses
 )
 from .protocol import (
     Inspect,
@@ -105,6 +106,7 @@ def route(route_name: RouteName):
     """
     Send the return parameters to `mk_request` through the given route.
     """
+    route = PETANQUE_ROUTES[route_name]
     def decorator(fn):
         @functools.wraps(fn)
         def wrapper(self: Pytanque, *args, **kwargs):
@@ -113,7 +115,7 @@ def route(route_name: RouteName):
             resp = self.query(route_name, params, timeout=timeout)
             if not resp and resp is not False:
                 return None
-            return resp.extract_response()
+            return route.extract_response(resp)
             
         return wrapper
     return decorator
@@ -188,7 +190,6 @@ class Pytanque:
         self,
         host: Optional[str] = None,
         port: Optional[int] = None,
-        stdio: bool = False,
         mode: PytanqueMode = PytanqueMode.SOCKET
     ):
         """
@@ -218,24 +219,24 @@ class Pytanque:
         self.port = None
         self.socket = None
         self.session_id = None
-        if stdio or mode == PytanqueMode.STDIO:
-            self.mode = PytanqueMode.STDIO
-        elif host is not None and port is not None:
-            if mode == PytanqueMode.SOCKET:
+        self.mode = mode
+        self.id = 0
+        if mode == PytanqueMode.STDIO:
+            return
+        elif not host or not port:
+            raise ValueError(
+                "Must specify (host, port) for socket/http mode"
+            )
+        match mode:
+            case PytanqueMode.SOCKET:
                 self.mode = PytanqueMode.SOCKET
                 self.host = host
                 self.port = port
                 self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            elif mode == PytanqueMode.HTTP:
+            case PytanqueMode.HTTP:
                 self.mode = PytanqueMode.HTTP
                 self.host = host
                 self.port = port
-        else:
-            raise ValueError(
-                "Must specify either (host, port) for socket/http mode or mode=PytanqueMode.STDIO for stdio mode"
-            )
-
-        self.id = 0
 
     def connect(self) -> None:
         """
@@ -260,22 +261,23 @@ class Pytanque:
         >>> client.connect()
         >>> client.close()
         """
-        if self.mode == PytanqueMode.SOCKET:
-            self.socket.connect((self.host, self.port))
-            logger.info(f"Connected to the socket")
-        elif self.mode == PytanqueMode.STDIO:
-            self.process = subprocess.Popen(
-                ["pet"],
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=False,
-            )
-            logger.info(f"Spawned pet subprocess")
-        elif self.mode == PytanqueMode.HTTP:
-            url = f"http://{self.host}:{self.port}/login"
-            response = requests.get(url)
-            self.session_id = response.json()['session_id']
+        match self.mode:
+            case PytanqueMode.SOCKET:
+                self.socket.connect((self.host, self.port))
+                logger.info(f"Connected to the socket")
+            case PytanqueMode.STDIO:
+                self.process = subprocess.Popen(
+                    ["pet"],
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=False,
+                )
+                logger.info(f"Spawned pet subprocess")
+            case PytanqueMode.HTTP:
+                url = f"http://{self.host}:{self.port}/login"
+                response = requests.get(url)
+                self.session_id = response.json()['session_id']
 
     def close(self) -> None:
         """
@@ -293,20 +295,21 @@ class Pytanque:
         >>> client.connect()
         >>> client.close()
         """
-        if self.mode == PytanqueMode.SOCKET:
-            self.socket.close()
-            logger.info(f"Socket closed")
-        elif self.mode == PytanqueMode.STDIO:
-            if self.process:
-                self.process.terminate()
-                try:
-                    self.process.wait(timeout=5)
-                except subprocess.TimeoutExpired:
-                    self.process.kill()
-                    self.process.wait()
-                logger.info(f"Pet subprocess terminated")
-        elif self.mode == PytanqueMode.HTTP:
-            logger.info("No closing process required for HTTP mode.")
+        match self.mode:
+            case PytanqueMode.SOCKET:
+                self.socket.close()
+                logger.info(f"Socket closed")
+            case PytanqueMode.STDIO:
+                if self.process:
+                    self.process.terminate()
+                    try:
+                        self.process.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        self.process.kill()
+                        self.process.wait()
+                    logger.info(f"Pet subprocess terminated")
+            case PytanqueMode.HTTP:
+                logger.info("No closing process required for HTTP mode.")
 
     def __enter__(self) -> Self:
         self.connect()
@@ -389,7 +392,7 @@ class Pytanque:
         params: Params,
         size: int = 4096,
         timeout: Optional[float] = None
-    ) -> Optional[BaseResponse]:
+    ) -> Optional[Responses]:
         """
         Send a low-level JSON-RPC query to the server or subprocess.
 
@@ -431,25 +434,26 @@ class Pytanque:
         payload = request.to_json()
         logger.info(f"Query Payload: {payload}")
 
-        if self.mode == PytanqueMode.SOCKET:
-            #TODO: Improve timeout precision
-            self.socket.settimeout(timeout)
-            try:
+        match self.mode:
+            case PytanqueMode.SOCKET:
+                #TODO: Improve timeout precision
+                self.socket.settimeout(timeout)
+                try:
+                    payload = json.dumps(payload) + "\n"
+                    self.socket.sendall(payload.encode())
+                    raw = self._read_socket_response(size)
+                except TimeoutError:
+                    raise PetanqueError(
+                        -33000, f"Timeout on {self.id}"
+                    )
+            case PytanqueMode.STDIO:
+                if timeout:
+                    logging.warning("Timeout not supported on Stdio mode.")
                 payload = json.dumps(payload) + "\n"
-                self.socket.sendall(payload.encode())
-                raw = self._read_socket_response(size)
-            except TimeoutError:
-                raise PetanqueError(
-                    -33000, f"Timeout on {self.id}"
-                )
-        elif self.mode == PytanqueMode.STDIO:
-            if timeout:
-                logging.warning("Timeout not supported on Stdio mode.")
-            payload = json.dumps(payload) + "\n"
-            self._send_lsp_message(payload)
-            raw = self._read_lsp_response()
-        elif self.mode == PytanqueMode.HTTP:
-            raw = self._send_request_message(route_name, payload, timeout=timeout)
+                self._send_lsp_message(payload)
+                raw = self._read_lsp_response()
+            case PytanqueMode.HTTP:
+                raw = self._send_request_message(route_name, payload, timeout=timeout)
         try:
             logger.info(f"Query Response: {raw}".strip())
             resp = Response.from_json_string(raw)
