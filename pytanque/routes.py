@@ -3,38 +3,36 @@ from dataclasses import dataclass
 from enum import StrEnum, unique
 from typing import Union
 
-from .params import (
+from .protocol import (
+    State,
     StartParams,
+    StartResponse,
     RunParams,
+    RunResponse,
     GoalsParams,
+    GoalsResponse,
     PremisesParams,
+    PremisesResponse,
     StateEqualParams,
+    StateEqualResponse,
     StateHashParams,
+    StateHashResponse,
     SetWorkspaceParams,
+    SetWorkspaceResponse,
     TocParams,
+    TocResponse,
     AstParams,
+    AstResponse,
     AstAtPosParams,
+    AstAtPosResponse,
     GetStateAtPosParams,
+    GetStateAtPosResponse,
     GetRootStateParams,
+    GetRootStateResponse,
     ListNotationsInStatementParams,
+    ListNotationsInStatementResponse
 )
 
-from .response import (
-    AstResponse,
-    AstAtPosResponse,
-    BaseResponse,
-    GetRootStateResponse,
-    GetStateAtPosResponse,
-    GoalsResponse,
-    ListNotationsInStatementResponse,
-    PremisesResponse,
-    RunResponse,
-    SetWorkspaceResponse,
-    StartResponse,
-    StateEqualResponse,
-    StateHashResponse,
-    TocResponse,
-)
 Params = Union[
     ListNotationsInStatementParams,
     StartParams,
@@ -54,7 +52,6 @@ Params = Union[
 Responses = Union[
     AstResponse,
     AstAtPosResponse,
-    BaseResponse,
     GetRootStateResponse,
     GetStateAtPosResponse,
     GoalsResponse,
@@ -85,22 +82,62 @@ class RouteName(StrEnum):
     LIST_NOTATIONS_IN_STATEMENTS = "petanque/list_notations_in_statement"
 
 @dataclass(frozen=True)
-class Route:
+class BaseRoute:
     params_cls: Params
     response_cls: Responses
 
-PETANQUE_ROUTES: dict[RouteName, Route] = {
-    RouteName.START: Route(StartParams, StartResponse),
-    RouteName.SET_WORKSPACE: Route(SetWorkspaceParams, SetWorkspaceResponse),
-    RouteName.RUN: Route(RunParams, RunResponse),
-    RouteName.GOALS: Route(GoalsParams, GoalsResponse),
-    RouteName.PREMISES: Route(PremisesParams, PremisesResponse),
-    RouteName.STATE_EQUAL: Route(StateEqualParams, StateEqualResponse),
-    RouteName.STATE_HASH: Route(StateHashParams, StateHashResponse),
-    RouteName.TOC: Route(TocParams, TocResponse),
-    RouteName.AST: Route(AstParams, AstResponse),
-    RouteName.AST_AT_POS: Route(AstAtPosParams, AstAtPosResponse),
-    RouteName.GET_STATE_AT_POS: Route(GetStateAtPosParams, GetStateAtPosResponse),
-    RouteName.GET_ROOT_STATE: Route(GetRootStateParams, GetRootStateResponse),
-    RouteName.LIST_NOTATIONS_IN_STATEMENTS: Route(ListNotationsInStatementParams, ListNotationsInStatementResponse)
+    @staticmethod
+    def extract_response(x: Responses):
+        return x.value
+
+@dataclass(frozen=True)
+class InitialSessionRoute(BaseRoute):
+    @staticmethod
+    def extract_state(x: Responses) -> State:
+        return State.from_json(x.to_json())
+
+@dataclass(frozen=True)
+class SessionRoute(BaseRoute):
+    @staticmethod
+    def extract_parent(x: Params) -> State:
+        return x.st
+
+@dataclass(frozen=True)
+class UniversalRoute(BaseRoute):
+    pass
+
+@dataclass(frozen=True)
+class GoalsRoute(BaseRoute):
+    @staticmethod
+    def extract_response(x: GoalsResponse):
+        return x
+
+@dataclass(frozen=True)
+class ListNotationsInStatementRoute(BaseRoute):
+    @staticmethod
+    def extract_response(x:ListNotationsInStatementResponse):
+        return x.st
+
+Routes = Union[BaseRoute,
+              InitialSessionRoute,
+              SessionRoute,
+              UniversalRoute,
+              GoalsRoute,
+              ListNotationsInStatementRoute
+            ]
+
+PETANQUE_ROUTES: dict[RouteName, Routes] = {
+    RouteName.START: InitialSessionRoute(StartParams, StartResponse),
+    RouteName.SET_WORKSPACE: UniversalRoute(SetWorkspaceParams, SetWorkspaceResponse),
+    RouteName.RUN: SessionRoute(RunParams, RunResponse),
+    RouteName.GOALS: GoalsRoute(GoalsParams, GoalsResponse),
+    RouteName.PREMISES: BaseRoute(PremisesParams, PremisesResponse),
+    RouteName.STATE_EQUAL: BaseRoute(StateEqualParams, StateEqualResponse),
+    RouteName.STATE_HASH: BaseRoute(StateHashParams, StateHashResponse),
+    RouteName.TOC: BaseRoute(TocParams, TocResponse),
+    RouteName.AST: BaseRoute(AstParams, AstResponse),
+    RouteName.AST_AT_POS: BaseRoute(AstAtPosParams, AstAtPosResponse),
+    RouteName.GET_STATE_AT_POS: InitialSessionRoute(GetStateAtPosParams, GetStateAtPosResponse),
+    RouteName.GET_ROOT_STATE: InitialSessionRoute(GetRootStateParams, GetRootStateResponse),
+    RouteName.LIST_NOTATIONS_IN_STATEMENTS: ListNotationsInStatementRoute(ListNotationsInStatementParams, ListNotationsInStatementResponse)
 }
