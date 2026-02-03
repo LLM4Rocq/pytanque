@@ -83,101 +83,101 @@ type notation_info = {
     scope: string nullable;
 }
 
-type base_start_params = {
+type start_params = {
     ?pre_commands: string option;
     ?opts: opts option;
     uri: string;
     thm: string;
 }
 
-type base_start_response = state
+type start_response = state
 
-type base_set_workspace_params = {
+type set_workspace_params = {
     debug: bool;
     root: string;
 }
 
-type base_set_workspace_response = abstract
+type set_workspace_response = abstract
 
-type base_run_params = {
+type run_params = {
     ?opts: opts option;
     st: state;
     tac: string;
 }
 
-type base_run_response = state
+type run_response = state
 
-type base_goals_params = {
+type goals_params = {
     st: state;
 }
 
-type base_goals_response = {
+type goals_response = {
     goals : goal list;
     stack: (abstract list * abstract list) list;
     shelf: abstract list;
     given_up: abstract list
 }
 
-type base_premises_params = {
+type premises_params = {
     st: state;
 }
 
-type base_premises_response = abstract
+type premises_response = abstract
 
-type base_state_equal_params = {
+type state_equal_params = {
     kind: inspect list;
     st1: state;
     st2: state;
 }
 
-type base_state_equal_response = bool
+type state_equal_response = bool
 
-type base_state_hash_params = {
+type state_hash_params = {
     st: state;
 }
 
-type base_state_hash_response = int
+type state_hash_response = int
 
-type base_toc_params = {
+type toc_params = {
     uri: string;
 }
 
-type base_toc_response = (string * toc_element list) list
+type toc_response = (string * toc_element list) list
 
-type base_ast_params = {
+type ast_params = {
     st: state;
     text: string;
 }
 
-type base_ast_response = abstract
+type ast_response = abstract
 
-type base_ast_at_pos_params = {
+type ast_at_pos_params = {
     uri: string;
     position: position;
 }
 
-type base_ast_at_pos_response = abstract
+type ast_at_pos_response = abstract
 
-type base_get_state_at_pos_params = {
+type get_state_at_pos_params = {
     ?opts: opts option;
     uri: string;
     position: position
 }
 
-type base_get_state_at_pos_response = state
+type get_state_at_pos_response = state
 
-type base_get_root_state_params = {
+type get_root_state_params = {
     ?opts: opts option;
     uri: string;
 }
 
-type base_get_root_state_response = state
+type get_root_state_response = state
 
-type base_list_notations_in_statement_params = {
+type list_notations_in_statement_params = {
     st: state;
     statement: string;
 }
 
-type base_list_notations_in_statement_response = {
+type list_notations_in_statement_response = {
     st: notation_info list
 }
