@@ -13,7 +13,7 @@ from .protocol import (
     InspectGoals
 )
 
-from .params import (
+from .routes import (
     RunParams,
     GoalsParams,
     PremisesParams,
@@ -26,10 +26,7 @@ from .params import (
     GetStateAtPosParams,
     GetRootStateParams,
     ListNotationsInStatementParams,
-    StartParams
-)
-
-from .response import (
+    StartParams,
     AstResponse,
     AstAtPosResponse,
     GetRootStateResponse,
