@@ -1,36 +1,46 @@
-from .client import Pytanque, State, PetanqueError, InspectPhysical, InspectGoals
+from .client import Pytanque, State, PetanqueError, InspectPhysical, InspectGoals, PytanqueMode
+
 from .protocol import (
     Request,
     Response,
     Failure,
     Position,
-    StartParams,
     Opts,
+    State,
+    Goal,
+    Inspect,
+    InspectPhysical,
+    InspectGoals
+)
+
+from .routes import (
     RunParams,
     GoalsParams,
     PremisesParams,
-    State,
-    Goal,
-    GoalsResponse,
-    PremisesResponse,
-    Inspect,
-    InspectPhysical,
-    InspectGoals,
     StateEqualParams,
-    StateEqualResponse,
     StateHashParams,
-    StateHashResponse,
     SetWorkspaceParams,
     TocParams,
-    TocResponse,
     AstParams,
     AstAtPosParams,
     GetStateAtPosParams,
     GetRootStateParams,
-    ListNotationsParams,
-    ListNotationsResponse,
+    ListNotationsInStatementParams,
+    StartParams,
+    AstResponse,
+    AstAtPosResponse,
+    GetRootStateResponse,
+    GetStateAtPosResponse,
+    GoalsResponse,
+    ListNotationsInStatementResponse,
+    PremisesResponse,
+    RunResponse,
+    SetWorkspaceResponse,
+    StartResponse,
+    StateEqualResponse,
+    StateHashResponse,
+    TocResponse,
 )
-
 __all__ = [
     "Pytanque",
     "PetanqueError",
@@ -62,6 +72,6 @@ __all__ = [
     "AstAtPosParams",
     "GetStateAtPosParams",
     "GetRootStateParams",
-    "ListNotationsParams",
-    "ListNotationsResponse",
+    "ListNotationsInParams",
+    "ListNotationsInResponse",
 ]
