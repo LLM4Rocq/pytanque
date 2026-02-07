@@ -356,7 +356,7 @@ class TestCompleteGoals:
         """Test complete goals at the end of a proof."""
         with Pytanque("127.0.0.1", 8765, mode=PytanqueMode.SOCKET) as client:
             state = client.start("./examples/foo.v", "addnC")
-            state = client.run(state, "by elim: n => //= ? ->.")
+            state = client.run(state, "lia.")
             complete_goals = client.complete_goals(state, pretty=True)
             GoalsResponse.from_json(complete_goals.to_json())
   
