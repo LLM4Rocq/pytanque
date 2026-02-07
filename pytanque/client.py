@@ -50,7 +50,8 @@ from .protocol import (
     Opts,
     Position,
     TocElement,
-    GoalsResponse
+    GoalsResponse,
+    NotationInfo
 )
 
 logger = logging.getLogger(__name__)
@@ -1031,7 +1032,7 @@ class Pytanque:
         return params
 
     @route(RouteName.LIST_NOTATIONS_IN_STATEMENTS)
-    def list_notations_in_statement(self, state: State, statement: str, timeout: Optional[float] = None) -> list[dict]:
+    def list_notations_in_statement(self, state: State, statement: str, timeout: Optional[float] = None) -> List[NotationInfo]:
         """
         Get the list of notations appearing in a theorem/lemma statement.
 
