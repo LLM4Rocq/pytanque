@@ -14,7 +14,7 @@ import subprocess
 import shutil
 import logging
 
-from pytanque import Pytanque, PetanqueError
+from pytanque import Pytanque, PetanqueError, PytanqueMode
 
 # Note: These tests communicate with pet subprocess via LSP protocol
 
@@ -37,7 +37,7 @@ class TestStdioMode:
     def test_stdio_smoke_test(self, check_pet_available, example_files):
         """Quick smoke test to verify basic stdio functionality."""
         print("Creating stdio client...")
-        client = Pytanque(stdio=True)
+        client = Pytanque(mode=PytanqueMode.STDIO)
         print("Connecting to subprocess...")
         client.connect()
 
@@ -65,7 +65,7 @@ class TestStdioMode:
 
     def test_stdio_basic_workflow(self, check_pet_available, example_files):
         """Test basic proof workflow in stdio mode."""
-        with Pytanque(stdio=True) as client:
+        with Pytanque(mode=PytanqueMode.STDIO) as client:
             # Set workspace
             client.set_workspace(debug=False, dir="./examples/")
 
@@ -92,7 +92,7 @@ class TestStdioMode:
 
     def test_stdio_state_at_pos_operations(self, check_pet_available, example_files):
         """Test state-related operations in stdio mode."""
-        with Pytanque(stdio=True) as client:
+        with Pytanque(mode=PytanqueMode.STDIO) as client:
             client.set_workspace(debug=False, dir="./examples/")
 
             # Test get_root_state
@@ -116,7 +116,7 @@ class TestStdioMode:
 
     def test_stdio_ast_functionality(self, check_pet_available, example_files):
         """Test AST functionality in stdio mode."""
-        with Pytanque(stdio=True) as client:
+        with Pytanque(mode=PytanqueMode.STDIO) as client:
             client.set_workspace(debug=False, dir="./examples/")
             state = client.start("./examples/foo.v", "addnC")
 
@@ -135,12 +135,12 @@ class TestStdioMode:
     ):
         """Compare stdio and socket modes to ensure they behave similarly."""
         # Test with stdio mode
-        with Pytanque(stdio=True) as stdio_client:
+        with Pytanque(mode=PytanqueMode.STDIO) as stdio_client:
             stdio_client.set_workspace(debug=False, dir="./examples/")
             stdio_toc = stdio_client.toc("./examples/foo.v")
 
         # Test with socket mode
-        with Pytanque("127.0.0.1", 8765) as socket_client:
+        with Pytanque("127.0.0.1", 8765, mode=PytanqueMode.SOCKET) as socket_client:
             socket_client.set_workspace(debug=False, dir="./examples/")
             socket_toc = socket_client.toc("./examples/foo.v")
 
@@ -154,7 +154,7 @@ class TestStdioMode:
 
     def test_stdio_search_commands(self, check_pet_available, example_files):
         """Test search commands in stdio mode."""
-        with Pytanque(stdio=True) as client:
+        with Pytanque(mode=PytanqueMode.STDIO) as client:
             client.set_workspace(debug=False, dir="./examples/")
             state = client.start("./examples/foo.v", "addnC")
 
@@ -172,7 +172,7 @@ class TestStdioMode:
 
     def test_stdio_error_handling(self, check_pet_available, example_files):
         """Test error handling in stdio mode."""
-        with Pytanque(stdio=True) as client:
+        with Pytanque(mode=PytanqueMode.STDIO) as client:
             client.set_workspace(debug=False, dir="./examples/")
 
             # Test with invalid theorem name
@@ -181,7 +181,7 @@ class TestStdioMode:
 
     def test_stdio_premises(self, check_pet_available, example_files):
         """Test premises functionality in stdio mode."""
-        with Pytanque(stdio=True) as client:
+        with Pytanque(mode=PytanqueMode.STDIO) as client:
             client.set_workspace(debug=False, dir="./examples/")
             state = client.start("./examples/foo.v", "addnC")
 
@@ -196,7 +196,7 @@ class TestStdioConstructor:
 
     def test_stdio_constructor_valid(self):
         """Test valid stdio constructor."""
-        client = Pytanque(stdio=True)
+        client = Pytanque(mode=PytanqueMode.STDIO)
         assert client.mode == "stdio"
         assert client.process is None  # Not connected yet
         assert client.host is None
@@ -205,7 +205,7 @@ class TestStdioConstructor:
 
     def test_socket_constructor_valid(self):
         """Test valid socket constructor (ensure compatibility)."""
-        client = Pytanque("127.0.0.1", 8765)
+        client = Pytanque("127.0.0.1", 8765, mode=PytanqueMode.SOCKET)
         assert client.mode == "socket"
         assert client.host == "127.0.0.1"
         assert client.port == 8765
