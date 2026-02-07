@@ -49,7 +49,8 @@ from .protocol import (
     Failure,
     Opts,
     Position,
-    TocElement
+    TocElement,
+    GoalsResponse
 )
 
 logger = logging.getLogger(__name__)
