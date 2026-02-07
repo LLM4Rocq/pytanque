@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum, unique
-from typing import Union
+from typing import Union, Type
 
 from .protocol import (
     State,
@@ -83,8 +83,8 @@ class RouteName(StrEnum):
 
 @dataclass(frozen=True)
 class BaseRoute:
-    params_cls: Params
-    response_cls: Responses
+    params_cls: Type[Params]
+    response_cls: Type[Responses]
 
     @staticmethod
     def extract_response(x: Responses):
