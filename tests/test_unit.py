@@ -349,7 +349,7 @@ class TestCompleteGoals:
         """Test complete goals at the beginning of a proof."""
         with Pytanque("127.0.0.1", 8765, mode=PytanqueMode.SOCKET) as client:
             state = client.start("./examples/foo.v", "addnAC")
-            complete_goals = client.complete_goals(state, pretty=True)
+            complete_goals = client.complete_goals(state)
             GoalsResponse.from_json(complete_goals.to_json())
 
     # def test_complete_goals_end(self, server_config, example_files, petanque_server):

@@ -658,13 +658,17 @@ class Pytanque:
         ...     for i, goal in enumerate(goals):
         ...         print(f"Goal {i}: {goal.pp}")
         """
-        complete_goals = self.complete_goals(state, pretty=pretty)
+        complete_goals = self.complete_goals(state)
         if not complete_goals:
             return []
-        return complete_goals.goals
+        goals = complete_goals.goals
+        if pretty:
+            for g in goals:
+                g.pp = pp_goal(g)
+        return goals
 
     @route(RouteName.GOALS)
-    def complete_goals(self, state: State, pretty: bool = True, timeout: Optional[float] = None) -> GoalsResponse:
+    def complete_goals(self, state: State, timeout: Optional[float] = None) -> GoalsResponse:
         """
         Return the complete goal information.
         """
