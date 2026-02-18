@@ -670,7 +670,35 @@ class Pytanque:
     @route(RouteName.GOALS)
     def complete_goals(self, state: State, timeout: Optional[float] = None) -> GoalsResponse:
         """
-        Return the complete goal information.
+        Return the complete goal information for the given proof state.
+
+        Unlike :meth:`goals`, this method returns the full :class:`GoalsResponse` object,
+        including not only the active goals but also the proof stack, shelf, and given-up goals.
+
+        Parameters
+        ----------
+        state : State
+            The proof state to query.
+        timeout : float, optional
+            Timeout in seconds for the request.
+
+        Returns
+        -------
+        GoalsResponse
+            The complete goals response containing:
+            - goals : list[Goal] - Active goals to prove
+            - stack : list - The proof stack (for focused goals)
+            - shelf : list - Shelved goals
+            - given_up : list - Goals that have been given up
+
+        Raises
+        ------
+        PetanqueError
+            If state is invalid.
+
+        See Also
+        --------
+        goals : Higher-level method returning only the list of active goals.
         """
         params = GoalsParams(state)
         return params
