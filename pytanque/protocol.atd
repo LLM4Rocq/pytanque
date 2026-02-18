@@ -31,28 +31,12 @@ type position = {
     character: int;
 }
 
-type start_params = {
-    ?pre_commands: string option;
-    ?opts: opts option;
-    uri: string;
-    thm: string;
-}
-
-type run_params = {
-    ?opts: opts option;
-    st: int;
-    tac: string;
-}
-
 type state = {
     st: int;
     ?hash: int option;
     proof_finished: bool;
-    feedback: (int * string) list
-}
-
-type goals_params = {
-    st: int;
+    feedback: (int * string) list;
+    ~generation <python default="0">: int;
 }
 
 type goal_hyp = {
@@ -66,47 +50,6 @@ type goal = {
     hyps: goal_hyp list;
     ty: string;
     ?pp: string option;
-}
-
-type goals_response = {
-    goals : goal list;
-    stack: (abstract list * abstract list) list;
-    shelf: abstract list;
-    given_up: abstract list
-}
-
-type premises_params = {
-    st: int;
-}
-
-type premises_response = abstract
-
-type inspect = [
-    InspectPhysical <json name="Physical"> |
-    InspectGoals <json name="Goals">
-]
-
-type state_equal_params = {
-    kind: inspect list;
-    st1: int;
-    st2: int;
-}
-
-type state_equal_response = bool
-
-type state_hash_params = {
-    st: int;
-}
-
-type state_hash_response = int
-
-type set_workspace_params = {
-    debug: bool;
-    root: string;
-}
-
-type toc_params = {
-    uri: string;
 }
 
 type range = {
@@ -127,28 +70,10 @@ type toc_element = {
     range: range;
 }
 
-type toc_response = (string * toc_element list) list
-
-type ast_params = {
-    st: int;
-    text: string;
-}
-
-type ast_at_pos_params = {
-    uri: string;
-    position: position;
-}
-
-type get_state_at_pos_params = {
-    ?opts: opts option;
-    uri: string;
-    position: position
-}
-
-type get_root_state_params = {
-    ?opts: opts option;
-    uri: string;
-}
+type inspect = [
+    InspectPhysical <json name="Physical"> |
+    InspectGoals <json name="Goals">
+]
 
 type notation_info = {
     locations: abstract list;
@@ -158,11 +83,101 @@ type notation_info = {
     scope: string nullable;
 }
 
-type list_notations_params = {
-    st: int;
+type start_params = {
+    ?pre_commands: string option;
+    ?opts: opts option;
+    uri: string;
+    thm: string;
+}
+
+type start_response = state
+
+type set_workspace_params = {
+    debug: bool;
+    root: string;
+}
+
+type set_workspace_response = abstract
+
+type run_params = {
+    ?opts: opts option;
+    st: state;
+    tac: string;
+}
+
+type run_response = state
+
+type goals_params = {
+    st: state;
+}
+
+type goals_response = {
+    goals : goal list;
+    stack: (abstract list * abstract list) list;
+    shelf: abstract list;
+    given_up: abstract list
+}
+
+type premises_params = {
+    st: state;
+}
+
+type premises_response = abstract
+
+type state_equal_params = {
+    kind: inspect list;
+    st1: state;
+    st2: state;
+}
+
+type state_equal_response = bool
+
+type state_hash_params = {
+    st: state;
+}
+
+type state_hash_response = int
+
+type toc_params = {
+    uri: string;
+}
+
+type toc_response = (string * toc_element list) list
+
+type ast_params = {
+    st: state;
+    text: string;
+}
+
+type ast_response = abstract
+
+type ast_at_pos_params = {
+    uri: string;
+    position: position;
+}
+
+type ast_at_pos_response = abstract
+
+type get_state_at_pos_params = {
+    ?opts: opts option;
+    uri: string;
+    position: position
+}
+
+type get_state_at_pos_response = state
+
+type get_root_state_params = {
+    ?opts: opts option;
+    uri: string;
+}
+
+type get_root_state_response = state
+
+type list_notations_in_statement_params = {
+    st: state;
     statement: string;
 }
 
-type list_notations_response = {
+type list_notations_in_statement_response = {
     st: notation_info list
 }

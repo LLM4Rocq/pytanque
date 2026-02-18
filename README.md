@@ -16,7 +16,7 @@ Pytanque is a Python API for lightweight communication with the [Rocq](https://r
 
 ### Key Features
 
-- **Two communication modes**: Socket mode (via `pet-server`) for multi-client usage or stdio mode (via `pet`) for single-client simplicity
+- **Three communication modes**: Socket mode (via `pet-server`) for multi-client usage, stdio mode (via `pet`) for single-client simplicity, or HTTP mode (via `rocq-ml-server`) for inference at scale.
 - **Interactive theorem proving**: Execute tactics and commands step by step
 - **Comprehensive feedback**: Access all Rocq messages (errors, warnings, search results)
 - **State management**: Navigate proof states and compare them
@@ -58,7 +58,7 @@ We recommend using uv.
 
 ## Quick Start
 
-Pytanque supports two communication modes with the Petanque backend:
+Pytanque supports three communication modes with the Petanque backend:
 
 ### Socket Mode (via pet-server)
 
@@ -75,7 +75,7 @@ $ pet-server -p 9000
 ```python
 from pytanque import Pytanque
 
-with Pytanque("127.0.0.1", 8765) as client:
+with Pytanque("127.0.0.1", 8765, mode=PytanqueMode.SOCKET) as client:
     # Start a proof
     state = client.start("./examples/foo.v", "addnC")
     print(f"Initial state: {state.st}, finished: {state.proof_finished}")
@@ -104,9 +104,42 @@ See also the notebook `examples/getting_started.ipynb` for more examples.
 For direct communication without a server, use subprocess mode:
 
 ```python
+from pytanque import Pytanque, PytanqueMode
+
+with Pytanque(mode=PytanqueMode.STDIO) as client:
+    # Same API as socket mode
+    state = client.start("./examples/foo.v", "addnC")
+    print(f"Initial state: {state.st}, finished: {state.proof_finished}")
+    
+    # Execute tactics step by step
+    state = client.run(state, "induction n.", verbose=True)
+    state = client.run(state, "auto.", verbose=True)
+    
+    # Check current goals
+    goals = client.goals(state)
+    print(f"Current goals: {len(goals)}")
+```
+
+### HTTP Mode (via rocq-ml-server)
+
+For communication with a [rocq-ml-server](https://github.com/LLM4Rocq/rocq-ml-toolbox).
+
+#### 1. Start the rocq-ml-Server
+
+See [here](https://github.com/LLM4Rocq/rocq-ml-toolbox/tree/main/src/rocq_ml_toolbox/inference) for more details about startup arguments:
+
+```bash
+$ rocq-ml-server  # Default port: 5000
+# Or specify a custom port:
+$ rocq-ml-server -p 9000
+```
+
+#### 2. Connect via Http
+
+```python
 from pytanque import Pytanque
 
-with Pytanque(stdio=True) as client:
+with Pytanque("127.0.0.1", 5000, mode=PytanqueMode.HTTP) as client:
     # Same API as socket mode
     state = client.start("./examples/foo.v", "addnC")
     print(f"Initial state: {state.st}, finished: {state.proof_finished}")
