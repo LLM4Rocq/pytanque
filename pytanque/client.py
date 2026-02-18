@@ -178,12 +178,12 @@ class Pytanque:
 
     Examples
     --------
-    Socket mode:
+    >>> # Socket mode
     >>> from pytanque import Pytanque
     >>> with Pytanque("127.0.0.1", 8765) as client:
     ...     state = client.start("./examples/foo.v", "addnC")
 
-    Stdio mode:
+    >>> # Stdio mode
     >>> with Pytanque(stdio=True) as client:
     ...     state = client.start("./examples/foo.v", "addnC")
     """
@@ -208,11 +208,11 @@ class Pytanque:
 
         Examples
         --------
-        Socket mode:
+        >>> # Socket mode
         >>> client = Pytanque("127.0.0.1", 8765)
         >>> client.connect()
 
-        Stdio mode:
+        >>> # Stdio mode
         >>> client = Pytanque(stdio=True)
         >>> client.connect()
         """
@@ -253,12 +253,12 @@ class Pytanque:
 
         Examples
         --------
-        Socket mode:
+        >>> # Socket mode
         >>> client = Pytanque("127.0.0.1", 8765)
         >>> client.connect()
         >>> client.close()
 
-        Stdio mode:
+        >>> # Stdio mode
         >>> client = Pytanque(stdio=True)
         >>> client.connect()
         >>> client.close()
@@ -287,12 +287,12 @@ class Pytanque:
 
         Examples
         --------
-        Socket mode:
+        >>> # Socket mode
         >>> client = Pytanque("127.0.0.1", 8765)
         >>> client.connect()
         >>> client.close()
 
-        Stdio mode:
+        >>> # Stdio mode
         >>> client = Pytanque(stdio=True)
         >>> client.connect()
         >>> client.close()
