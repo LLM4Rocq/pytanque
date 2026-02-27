@@ -18,6 +18,7 @@ from typing import (
     Type,
 )
 import requests
+from requests.exceptions import ReadTimeout
 from typing_extensions import Self
 from types import TracebackType
 from .routes import PETANQUE_ROUTES, Params, RouteName
@@ -112,7 +113,7 @@ def route(route_name: RouteName):
     def decorator(fn):
         @functools.wraps(fn)
         def wrapper(self: Pytanque, *args, **kwargs):
-            timeout = kwargs.pop("timeout", None)
+            timeout = kwargs.get("timeout", None)
             params = fn(self, *args, **kwargs)
             resp = self.query(route_name, params, timeout=timeout)
             if not resp and resp is not False:
@@ -175,7 +176,8 @@ class Pytanque:
         Subprocess handle (subprocess mode only).
     mode : str
         Communication mode: "socket" or "subprocess".
-
+    timeout_http : float
+            http timeout (http mode only).
     Examples
     --------
     >>> # Socket mode
@@ -192,7 +194,8 @@ class Pytanque:
         self,
         host: Optional[str] = None,
         port: Optional[int] = None,
-        mode: PytanqueMode = PytanqueMode.SOCKET
+        mode: PytanqueMode = PytanqueMode.SOCKET,
+        timeout_http: Optional[float] = None
     ):
         """
         Initialize a new Pytanque client instance.
@@ -205,7 +208,9 @@ class Pytanque:
             The port number of the Petanque server (for socket mode).
         stdio : bool, optional
             Whether to use stdio mode with "pet" command, by default False.
-
+        timeout_http : float, optional
+            Maximum time in seconds to wait for an HTTP response before raising
+    a timeout error. If None, no timeout is applied.
         Examples
         --------
         >>> # Socket mode
@@ -221,6 +226,7 @@ class Pytanque:
         self.port = None
         self.socket = None
         self.session_id = None
+        self.timeout_http = None
         self.mode = mode
         self.id = 0
         if mode == PytanqueMode.STDIO:
@@ -239,6 +245,7 @@ class Pytanque:
                 self.mode = PytanqueMode.HTTP
                 self.host = host
                 self.port = port
+                self.timeout_http = timeout_http
 
     def connect(self) -> None:
         """
@@ -332,11 +339,16 @@ class Pytanque:
         payload['timeout'] = timeout
         payload['route_name'] = route_name
         payload['session_id'] = self.session_id
-        response = requests.post(
-            url,
-            json=payload,
-            timeout=timeout
-        )
+        try:
+            response = requests.post(
+                url,
+                json=payload,
+                timeout=self.timeout_http
+            )
+        except ReadTimeout:
+            raise PetanqueError(
+                -33000, f"Timeout on {route_name}."
+            )
         try:
             _ = response.json()
         except json.JSONDecodeError as e:
@@ -619,7 +631,7 @@ class Pytanque:
         ...     # Execute with timeout
         ...     state = client.run(state, "auto.", timeout=5)
         """
-        if timeout and cmd.endswith("."):
+        if timeout and cmd.endswith(".") and not cmd.startswith(("-", "+", "*")):
             cmd = f"Timeout {timeout} {cmd}"
         params = RunParams(state, cmd, opts)
         return params

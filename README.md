@@ -139,7 +139,9 @@ $ rocq-ml-server -p 9000
 ```python
 from pytanque import Pytanque
 
-with Pytanque("127.0.0.1", 5000, mode=PytanqueMode.HTTP) as client:
+# When using HTTP mode, we can use the `timeout_http` attribute, corresponding to the maximum time the server has to answer before raising a timeout error. Useful when `number of clients` >> `number of pet servers`.
+
+with Pytanque("127.0.0.1", 5000, mode=PytanqueMode.HTTP, timeout_http=20*60) as
     # Same API as socket mode
     state = client.start("./examples/foo.v", "addnC")
     print(f"Initial state: {state.st}, finished: {state.proof_finished}")
