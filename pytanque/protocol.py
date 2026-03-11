@@ -1217,6 +1217,70 @@ class NotationInfo:
 
 
 @dataclass
+class LoadRawStateResponse:
+    """Original type: load_raw_state_response = { ... }"""
+
+    st: int
+
+    @classmethod
+    def from_json(cls, x: Any) -> "LoadRawStateResponse":
+        if isinstance(x, dict):
+            return cls(
+                st=(
+                    _atd_read_int(x["st"])
+                    if "st" in x
+                    else _atd_missing_json_field("LoadRawStateResponse", "st")
+                ),
+            )
+        else:
+            _atd_bad_json("LoadRawStateResponse", x)
+
+    def to_json(self) -> Any:
+        res: Dict[str, Any] = {}
+        res["st"] = _atd_write_int(self.st)
+        return res
+
+    @classmethod
+    def from_json_string(cls, x: str) -> "LoadRawStateResponse":
+        return cls.from_json(json.loads(x))
+
+    def to_json_string(self, **kw: Any) -> str:
+        return json.dumps(self.to_json(), **kw)
+
+
+@dataclass
+class LoadRawStateParams:
+    """Original type: load_raw_state_params = { ... }"""
+
+    raw_state: str
+
+    @classmethod
+    def from_json(cls, x: Any) -> "LoadRawStateParams":
+        if isinstance(x, dict):
+            return cls(
+                raw_state=(
+                    _atd_read_string(x["raw_state"])
+                    if "raw_state" in x
+                    else _atd_missing_json_field("LoadRawStateParams", "raw_state")
+                ),
+            )
+        else:
+            _atd_bad_json("LoadRawStateParams", x)
+
+    def to_json(self) -> Any:
+        res: Dict[str, Any] = {}
+        res["raw_state"] = _atd_write_string(self.raw_state)
+        return res
+
+    @classmethod
+    def from_json_string(cls, x: str) -> "LoadRawStateParams":
+        return cls.from_json(json.loads(x))
+
+    def to_json_string(self, **kw: Any) -> str:
+        return json.dumps(self.to_json(), **kw)
+
+
+@dataclass
 class ListNotationsInStatementResponse:
     """Original type: list_notations_in_statement_response = { ... }"""
 
@@ -1684,6 +1748,70 @@ class Failure:
 
     @classmethod
     def from_json_string(cls, x: str) -> "Failure":
+        return cls.from_json(json.loads(x))
+
+    def to_json_string(self, **kw: Any) -> str:
+        return json.dumps(self.to_json(), **kw)
+
+
+@dataclass
+class DumpRawStateResponse:
+    """Original type: dump_raw_state_response = { ... }"""
+
+    raw_state: str
+
+    @classmethod
+    def from_json(cls, x: Any) -> "DumpRawStateResponse":
+        if isinstance(x, dict):
+            return cls(
+                raw_state=(
+                    _atd_read_string(x["raw_state"])
+                    if "raw_state" in x
+                    else _atd_missing_json_field("DumpRawStateResponse", "raw_state")
+                ),
+            )
+        else:
+            _atd_bad_json("DumpRawStateResponse", x)
+
+    def to_json(self) -> Any:
+        res: Dict[str, Any] = {}
+        res["raw_state"] = _atd_write_string(self.raw_state)
+        return res
+
+    @classmethod
+    def from_json_string(cls, x: str) -> "DumpRawStateResponse":
+        return cls.from_json(json.loads(x))
+
+    def to_json_string(self, **kw: Any) -> str:
+        return json.dumps(self.to_json(), **kw)
+
+
+@dataclass
+class DumpRawStateParams:
+    """Original type: dump_raw_state_params = { ... }"""
+
+    st: State
+
+    @classmethod
+    def from_json(cls, x: Any) -> "DumpRawStateParams":
+        if isinstance(x, dict):
+            return cls(
+                st=(
+                    State.from_json(x["st"])
+                    if "st" in x
+                    else _atd_missing_json_field("DumpRawStateParams", "st")
+                ),
+            )
+        else:
+            _atd_bad_json("DumpRawStateParams", x)
+
+    def to_json(self) -> Any:
+        res: Dict[str, Any] = {}
+        res["st"] = (lambda x: x.to_json())(self.st)
+        return res
+
+    @classmethod
+    def from_json_string(cls, x: str) -> "DumpRawStateParams":
         return cls.from_json(json.loads(x))
 
     def to_json_string(self, **kw: Any) -> str:

@@ -138,6 +138,22 @@ type state_hash_params = {
 
 type state_hash_response = int
 
+type dump_raw_state_params = {
+    st: state;
+}
+
+type dump_raw_state_response = {
+    raw_state: string;
+}
+
+type load_raw_state_params = {
+    raw_state: string;
+}
+
+type load_raw_state_response = {
+    st: int;
+}
+
 type toc_params = {
     uri: string;
 }
