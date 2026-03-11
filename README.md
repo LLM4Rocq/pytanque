@@ -170,6 +170,8 @@ with Pytanque("127.0.0.1", 5000, mode=PytanqueMode.HTTP, timeout_http=20*60) as
 - **`get_root_state(file)`**: Get initial document state
 - **`state_equal(st1, st2, kind)`**: Compare proof states
 - **`state_hash(state)`**: Get state hash
+- **`dump_raw_state(state)`**: Serialize a state to Petanque raw format
+- **`load_raw_state(raw_state)`**: Restore a raw state payload into server cache
 - **`toc(file)`**: Get table of contents
 - **`ast(state, text)`**: Parse command to AST
 - **`ast_at_pos(file, line, char)`**: Get AST at file position

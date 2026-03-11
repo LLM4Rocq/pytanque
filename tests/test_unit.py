@@ -220,6 +220,31 @@ class TestStateHashMethod:
 
             assert isinstance(hash_value, int)
 
+class TestRawStateMethods:
+    """Test raw state dump/load methods."""
+
+    def test_dump_and_load_raw_state(self):
+        """Round-trip a state through dump_raw_state/load_raw_state."""
+        with Pytanque(mode=PytanqueMode.STDIO) as client:
+            state = client.start("./examples/foo.v", "addnC")
+            state = client.run(state, "induction n.")
+
+            try:
+                raw_state = client.dump_raw_state(state)
+            except PetanqueError as e:
+                if e.code == -32601:
+                    pytest.skip("pet-server does not support dump_raw_state/load_raw_state")
+                raise
+            assert isinstance(raw_state, str)
+            assert len(raw_state) > 0
+
+            loaded_state = client.load_raw_state(raw_state)
+            assert isinstance(loaded_state.st, int)
+
+            goals_original = client.complete_goals(state)
+            goals_loaded = client.complete_goals(loaded_state)
+            assert goals_original.to_json() == goals_loaded.to_json()
+
 
 class TestTocMethod:
     """Test toc method examples."""

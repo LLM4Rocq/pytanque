@@ -37,6 +37,8 @@ from .routes import (
     GetStateAtPosParams,
     GetRootStateParams,
     ListNotationsInStatementParams,
+    DumpRawStateParams,
+    LoadRawStateParams,
     Responses
 )
 from .protocol import (
@@ -813,7 +815,45 @@ class Pytanque:
         """
         params = StateHashParams(state)
         return params
-    
+
+    @route(RouteName.DUMP_RAW_STATE)
+    def dump_raw_state(self, state: State, timeout: Optional[float] = None) -> str:
+        """
+        Serialize a proof state into Petanque's raw-state format.
+
+        Parameters
+        ----------
+        state : State
+            The state to serialize.
+        timeout : float, optional
+            Timeout in seconds for the request.
+
+        Returns
+        -------
+        str
+            Serialized raw-state payload.
+        """
+        return DumpRawStateParams(state)
+
+    @route(RouteName.LOAD_RAW_STATE)
+    def load_raw_state(self, raw_state: str, timeout: Optional[float] = None) -> State:
+        """
+        Load a serialized Petanque raw-state payload into cache.
+
+        Parameters
+        ----------
+        raw_state : str
+            Serialized raw-state payload from :meth:`dump_raw_state`.
+        timeout : float, optional
+            Timeout in seconds for the request.
+
+        Returns
+        -------
+        State
+            A shallow state containing the restored state identifier.
+        """
+        return LoadRawStateParams(raw_state)
+
     @route(RouteName.TOC)
     def toc(self, file: str, timeout: Optional[float] = None) -> list[tuple[str, List[TocElement]]]:
         """

@@ -30,11 +30,17 @@ from .protocol import (
     GetRootStateParams,
     GetRootStateResponse,
     ListNotationsInStatementParams,
-    ListNotationsInStatementResponse
+    ListNotationsInStatementResponse,
+    DumpRawStateParams,
+    DumpRawStateResponse,
+    LoadRawStateParams,
+    LoadRawStateResponse,
 )
 
 Params = Union[
     ListNotationsInStatementParams,
+    LoadRawStateParams,
+    DumpRawStateParams,
     StartParams,
     GetStateAtPosParams,
     GetRootStateParams,
@@ -52,9 +58,11 @@ Params = Union[
 Responses = Union[
     AstResponse,
     AstAtPosResponse,
+    DumpRawStateResponse,
     GetRootStateResponse,
     GetStateAtPosResponse,
     GoalsResponse,
+    LoadRawStateResponse,
     ListNotationsInStatementResponse,
     PremisesResponse,
     RunResponse,
@@ -80,6 +88,8 @@ class RouteName(StrEnum):
     GET_STATE_AT_POS = "petanque/get_state_at_pos"
     GET_ROOT_STATE = "petanque/get_root_state"
     LIST_NOTATIONS_IN_STATEMENTS = "petanque/list_notations_in_statement"
+    DUMP_RAW_STATE = "petanque/dump_raw_state"
+    LOAD_RAW_STATE = "petanque/load_raw_state"
 
 @dataclass(frozen=True)
 class BaseRoute:
@@ -118,12 +128,26 @@ class ListNotationsInStatementRoute(BaseRoute):
     def extract_response(x:ListNotationsInStatementResponse):
         return x.st
 
+@dataclass(frozen=True)
+class DumpRawStateRoute(BaseRoute):
+    @staticmethod
+    def extract_response(x: DumpRawStateResponse):
+        return x.raw_state
+
+@dataclass(frozen=True)
+class LoadRawStateRoute(BaseRoute):
+    @staticmethod
+    def extract_response(x: LoadRawStateResponse):
+        return State(st=x.st, proof_finished=False, feedback=[])
+
 Routes = Union[BaseRoute,
               InitialSessionRoute,
               SessionRoute,
               UniversalRoute,
               GoalsRoute,
-              ListNotationsInStatementRoute
+              ListNotationsInStatementRoute,
+              DumpRawStateRoute,
+              LoadRawStateRoute
             ]
 
 PETANQUE_ROUTES: dict[RouteName, Routes] = {
@@ -139,5 +163,7 @@ PETANQUE_ROUTES: dict[RouteName, Routes] = {
     RouteName.AST_AT_POS: BaseRoute(AstAtPosParams, AstAtPosResponse),
     RouteName.GET_STATE_AT_POS: InitialSessionRoute(GetStateAtPosParams, GetStateAtPosResponse),
     RouteName.GET_ROOT_STATE: InitialSessionRoute(GetRootStateParams, GetRootStateResponse),
-    RouteName.LIST_NOTATIONS_IN_STATEMENTS: ListNotationsInStatementRoute(ListNotationsInStatementParams, ListNotationsInStatementResponse)
+    RouteName.LIST_NOTATIONS_IN_STATEMENTS: ListNotationsInStatementRoute(ListNotationsInStatementParams, ListNotationsInStatementResponse),
+    RouteName.DUMP_RAW_STATE: DumpRawStateRoute(DumpRawStateParams, DumpRawStateResponse),
+    RouteName.LOAD_RAW_STATE: LoadRawStateRoute(LoadRawStateParams, LoadRawStateResponse)
 }
