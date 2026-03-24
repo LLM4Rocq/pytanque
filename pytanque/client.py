@@ -37,7 +37,7 @@ from .routes import (
     GetStateAtPosParams,
     GetRootStateParams,
     ListNotationsInStatementParams,
-    Responses
+    Responses,
 )
 from .protocol import (
     Inspect,
@@ -52,7 +52,7 @@ from .protocol import (
     Position,
     TocElement,
     GoalsResponse,
-    NotationInfo
+    NotationInfo,
 )
 
 logger = logging.getLogger(__name__)
@@ -95,21 +95,25 @@ InspectPhysical = Inspect(InspectPhysical())
 InspectGoals = Inspect(InspectGoals())
 
 
-def mk_request(id: int, params: Params, route: RouteName, project_state=True) -> Request:
+def mk_request(
+    id: int, params: Params, route: RouteName, project_state=True
+) -> Request:
     # TODO: update petanque to remove project_state?
     params_json = params.to_json()
     if project_state:
         for f in fields(params):
             value = getattr(params, f.name)
             if isinstance(value, State):
-                params_json[f.name] = params_json[f.name]['st']
+                params_json[f.name] = params_json[f.name]["st"]
     return Request(id, route.value, params_json)
+
 
 def route(route_name: RouteName):
     """
     Send the return parameters to `mk_request` through the given route.
     """
     route = PETANQUE_ROUTES[route_name]
+
     def decorator(fn):
         @functools.wraps(fn)
         def wrapper(self: Pytanque, *args, **kwargs):
@@ -119,9 +123,11 @@ def route(route_name: RouteName):
             if not resp and resp is not False:
                 return None
             return route.extract_response(resp)
-            
+
         return wrapper
+
     return decorator
+
 
 def pp_goal(g: Goal) -> str:
     hyps = "\n".join(
@@ -132,10 +138,11 @@ def pp_goal(g: Goal) -> str:
     )
     return f"{hyps}\n|-{g.ty}"
 
+
 class PytanqueMode(StrEnum):
-    STDIO = 'stdio'
-    SOCKET = 'socket'
-    HTTP = 'http'
+    STDIO = "stdio"
+    SOCKET = "socket"
+    HTTP = "http"
 
 
 class Pytanque:
@@ -195,31 +202,31 @@ class Pytanque:
         host: Optional[str] = None,
         port: Optional[int] = None,
         mode: PytanqueMode = PytanqueMode.SOCKET,
-        timeout_http: Optional[float] = None
+        timeout_http: Optional[float] = None,
     ):
         """
-        Initialize a new Pytanque client instance.
+            Initialize a new Pytanque client instance.
 
-        Parameters
-        ----------
-        host : str, optional
-            The hostname or IP address of the Petanque server (for socket mode).
-        port : int, optional
-            The port number of the Petanque server (for socket mode).
-        stdio : bool, optional
-            Whether to use stdio mode with "pet" command, by default False.
-        timeout_http : float, optional
-            Maximum time in seconds to wait for an HTTP response before raising
-    a timeout error. If None, no timeout is applied.
-        Examples
-        --------
-        >>> # Socket mode
-        >>> client = Pytanque("127.0.0.1", 8765)
-        >>> client.connect()
+            Parameters
+            ----------
+            host : str, optional
+                The hostname or IP address of the Petanque server (for socket mode).
+            port : int, optional
+                The port number of the Petanque server (for socket mode).
+            stdio : bool, optional
+                Whether to use stdio mode with "pet" command, by default False.
+            timeout_http : float, optional
+                Maximum time in seconds to wait for an HTTP response before raising
+        a timeout error. If None, no timeout is applied.
+            Examples
+            --------
+            >>> # Socket mode
+            >>> client = Pytanque("127.0.0.1", 8765)
+            >>> client.connect()
 
-        >>> # Stdio mode
-        >>> client = Pytanque(stdio=True)
-        >>> client.connect()
+            >>> # Stdio mode
+            >>> client = Pytanque(stdio=True)
+            >>> client.connect()
         """
         self.process = None
         self.host = None
@@ -232,9 +239,7 @@ class Pytanque:
         if mode == PytanqueMode.STDIO:
             return
         elif not host or not port:
-            raise ValueError(
-                "Must specify (host, port) for socket/http mode"
-            )
+            raise ValueError("Must specify (host, port) for socket/http mode")
         match mode:
             case PytanqueMode.SOCKET:
                 self.mode = PytanqueMode.SOCKET
@@ -286,7 +291,7 @@ class Pytanque:
             case PytanqueMode.HTTP:
                 url = f"http://{self.host}:{self.port}/login"
                 response = requests.get(url)
-                self.session_id = response.json()['session_id']
+                self.session_id = response.json()["session_id"]
 
     def close(self) -> None:
         """
@@ -334,21 +339,17 @@ class Pytanque:
                 break
         return "".join(fragments)
 
-    def _send_request_message(self, route_name:RouteName, payload: Any, timeout: Optional[float]=None) -> None:
+    def _send_request_message(
+        self, route_name: RouteName, payload: Any, timeout: Optional[float] = None
+    ) -> None:
         url = f"http://{self.host}:{self.port}/rpc"
-        payload['timeout'] = timeout
-        payload['route_name'] = route_name
-        payload['session_id'] = self.session_id
+        payload["timeout"] = timeout
+        payload["route_name"] = route_name
+        payload["session_id"] = self.session_id
         try:
-            response = requests.post(
-                url,
-                json=payload,
-                timeout=self.timeout_http
-            )
+            response = requests.post(url, json=payload, timeout=self.timeout_http)
         except ReadTimeout:
-            raise PetanqueError(
-                -33000, f"Timeout on {route_name}."
-            )
+            raise PetanqueError(-33000, f"Timeout on {route_name}.")
         try:
             _ = response.json()
         except json.JSONDecodeError as e:
@@ -399,13 +400,13 @@ class Pytanque:
                 continue
 
             return json_content
-    
+
     def query(
         self,
         route_name: RouteName,
         params: Params,
         size: int = 4096,
-        timeout: Optional[float] = None
+        timeout: Optional[float] = None,
     ) -> Optional[Responses]:
         """
         Send a low-level JSON-RPC query to the server or subprocess.
@@ -442,7 +443,7 @@ class Pytanque:
         >>> client.close()
         """
         self.id += 1
-        project_state = (self.mode != PytanqueMode.HTTP)
+        project_state = self.mode != PytanqueMode.HTTP
         # TODO: Maybe update petanque so that it takes whole state as input instead of state.st
         request = mk_request(self.id, params, route_name, project_state=project_state)
         payload = request.to_json()
@@ -450,19 +451,15 @@ class Pytanque:
 
         match self.mode:
             case PytanqueMode.SOCKET:
-                #TODO: Improve timeout precision
+                # TODO: Improve timeout precision
                 self.socket.settimeout(timeout)
                 try:
                     payload = json.dumps(payload) + "\n"
                     self.socket.sendall(payload.encode())
                     raw = self._read_socket_response(size)
                 except TimeoutError:
-                    raise PetanqueError(
-                        -33000, f"Timeout on {self.id}"
-                    )
+                    raise PetanqueError(-33000, f"Timeout on {self.id}")
             case PytanqueMode.STDIO:
-                if timeout:
-                    logging.warning("Timeout not supported on Stdio mode.")
                 payload = json.dumps(payload) + "\n"
                 self._send_lsp_message(payload)
                 raw = self._read_lsp_response()
@@ -490,7 +487,7 @@ class Pytanque:
         thm: str,
         pre_commands: Optional[str] = None,
         opts: Optional[Opts] = None,
-        timeout: Optional[float] = None
+        timeout: Optional[float] = None,
     ) -> State:
         """
         Start a proof session for a specific theorem in a Coq/Rocq file.
@@ -568,7 +565,7 @@ class Pytanque:
         cmd: str,
         opts: Optional[Opts] = None,
         verbose: bool = False,
-        timeout: Optional[float] = None
+        timeout: Optional[float] = None,
     ) -> State:
         """
         Execute a command on the current proof state.
@@ -636,7 +633,9 @@ class Pytanque:
         params = RunParams(state, cmd, opts)
         return params
 
-    def goals(self, state: State, pretty: bool = True, timeout: Optional[float] = None) -> list[Goal]:
+    def goals(
+        self, state: State, pretty: bool = True, timeout: Optional[float] = None
+    ) -> list[Goal]:
         """
         Retrieve the current goals for a proof state.
 
@@ -680,7 +679,9 @@ class Pytanque:
         return goals
 
     @route(RouteName.GOALS)
-    def complete_goals(self, state: State, timeout: Optional[float] = None) -> GoalsResponse:
+    def complete_goals(
+        self, state: State, timeout: Optional[float] = None
+    ) -> GoalsResponse:
         """
         Return the complete goal information for the given proof state.
 
@@ -746,7 +747,9 @@ class Pytanque:
         return params
 
     @route(RouteName.STATE_EQUAL)
-    def state_equal(self, st1: State, st2: State, kind: Inspect, timeout: Optional[float] = None) -> bool:
+    def state_equal(
+        self, st1: State, st2: State, kind: Inspect, timeout: Optional[float] = None
+    ) -> bool:
         """
         Compare two proof states for equality.
 
@@ -813,9 +816,11 @@ class Pytanque:
         """
         params = StateHashParams(state)
         return params
-    
+
     @route(RouteName.TOC)
-    def toc(self, file: str, timeout: Optional[float] = None) -> list[tuple[str, List[TocElement]]]:
+    def toc(
+        self, file: str, timeout: Optional[float] = None
+    ) -> list[tuple[str, List[TocElement]]]:
         """
         Get the table of contents (available definitions and theorems) for a Coq/Rocq file.
 
@@ -850,12 +855,7 @@ class Pytanque:
         return params
 
     @route(RouteName.AST)
-    def ast(
-        self,
-        state: State,
-        text: str,
-        timeout: Optional[float] = None
-    ) -> dict:
+    def ast(self, state: State, text: str, timeout: Optional[float] = None) -> dict:
         """
         Get the Abstract Syntax Tree (AST) of a command parsed at a given state.
 
@@ -898,11 +898,7 @@ class Pytanque:
 
     @route(RouteName.AST_AT_POS)
     def ast_at_pos(
-        self,
-        file: str,
-        line: int,
-        character: int,
-        timeout: Optional[float] = None
+        self, file: str, line: int, character: int, timeout: Optional[float] = None
     ) -> dict:
         """
         Get the Abstract Syntax Tree (AST) at a specific position in a file.
@@ -956,7 +952,7 @@ class Pytanque:
         line: int,
         character: int,
         opts: Optional[Opts] = None,
-        timeout: Optional[float] = None
+        timeout: Optional[float] = None,
     ) -> State:
         """
         Get the proof state at a specific position in a file.
@@ -1019,7 +1015,9 @@ class Pytanque:
         return params
 
     @route(RouteName.GET_ROOT_STATE)
-    def get_root_state(self, file: str, opts: Optional[Opts] = None, timeout: Optional[float] = None) -> State:
+    def get_root_state(
+        self, file: str, opts: Optional[Opts] = None, timeout: Optional[float] = None
+    ) -> State:
         """
         Get the initial (root) state of a document.
 
@@ -1076,7 +1074,9 @@ class Pytanque:
         return params
 
     @route(RouteName.LIST_NOTATIONS_IN_STATEMENTS)
-    def list_notations_in_statement(self, state: State, statement: str, timeout: Optional[float] = None) -> List[NotationInfo]:
+    def list_notations_in_statement(
+        self, state: State, statement: str, timeout: Optional[float] = None
+    ) -> List[NotationInfo]:
         """
         Get the list of notations appearing in a theorem/lemma statement.
 
