@@ -13,7 +13,7 @@ copyright = "2025, Pytanque Contributors"
 author = "Pytanque Contributors"
 
 # The full version, including alpha/beta/rc tags
-release = "0.2.0"
+release = "0.2.2"
 
 # -- General configuration ---------------------------------------------------
 extensions = [
